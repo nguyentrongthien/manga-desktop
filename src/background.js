@@ -1,9 +1,13 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
-import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+import {app, BrowserWindow, protocol} from 'electron'
+import {createProtocol} from 'vue-cli-plugin-electron-builder/lib'
+import installExtension, {VUEJS_DEVTOOLS} from 'electron-devtools-installer'
+import helperFunctions from './helpers';
+
 const isDevelopment = process.env.NODE_ENV !== 'production'
+const {ipcMain} = require('electron')
+const path = require('path')
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -20,7 +24,8 @@ async function createWindow() {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
-      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
+      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
+      preload: path.join(__dirname, 'preload.js'),
     }
   })
 
@@ -63,6 +68,11 @@ app.on('ready', async () => {
     }
   }
   createWindow()
+})
+
+// Handle message coming from Renderer (check for output in terminal, not web dev console)
+ipcMain.on('run-helper', async (event, args) => {
+  event.returnValue = await helperFunctions[args.fn](args.payload)
 })
 
 // Exit cleanly on request from parent process in development mode.
