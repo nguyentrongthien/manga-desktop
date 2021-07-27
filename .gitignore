@@ -14,7 +14,9 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Editor directories and files
-.idea
+.idea/workspace.xml
+.idea/tasks.xml
+
 .vscode
 *.suo
 *.ntvs*

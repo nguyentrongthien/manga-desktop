@@ -1,4 +1,5 @@
-# manga-desktop
+# Manga Desktop
+This is a manga reading app for desktop written using Electron and Vue.
 
 ## Project setup
 ```
