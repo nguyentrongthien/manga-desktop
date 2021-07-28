@@ -14,7 +14,7 @@ export default {
     },
     getDir : async (multiple = false) => {
         return await dialog.showOpenDialog({
-            properties: multiple ? ['openDirectory', 'multiSelections'] : ['openDirectory']
+            properties: multiple === true ? ['openDirectory', 'multiSelections'] : ['openDirectory']
         });
     },
 }

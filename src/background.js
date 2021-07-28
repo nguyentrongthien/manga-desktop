@@ -77,8 +77,12 @@ app.on('ready', async () => {
 })
 
 // Handle message coming from Renderer (check for output in terminal, not web dev console)
-ipcMain.on('run-helper', async (event, args) => {
-  event.returnValue = await helperFunctions[args.fn](args.payload)
+ipcMain.on('from-renderer', async (event, args) => {
+  if(typeof helperFunctions[args.fn] !== "undefined") {
+    let res = await helperFunctions[args.fn](args.payload);
+    event.reply('from-main', { result: res, passThrough: args.passThrough});
+  }
+  else console.error('function [' + args.fn + '] is not found in helper functions.');
 })
 
 // Exit cleanly on request from parent process in development mode.
