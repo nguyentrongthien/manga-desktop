@@ -17,6 +17,7 @@ protocol.registerSchemesAsPrivileged([
 async function createWindow() {
   // Create the browser window.
   const win = new BrowserWindow({
+    title: "Manga Desktop",
     width: 800,
     height: 600,
     webPreferences: {
@@ -28,6 +29,11 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     }
   })
+
+  // Prevent anything else from changing the title
+  win.on('page-title-updated', (evt) => {
+    evt.preventDefault();
+  });
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
