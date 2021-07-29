@@ -19,20 +19,21 @@ Vuex.Store.prototype.hasModule = function (aPath) {
 
 Vue.use(Vuex);
 
+const defaults = [
+    {
+        key: 'version',
+        value: "0.0.1"
+    },
+    {
+        key: 'directory',
+        value: null
+    },
+];
+
 const state = {
     busy: false,
     version: "0.0.1",
     data: {},
-    defaults: [
-        {
-            key: 'version',
-            value: "0.0.1"
-        },
-        {
-            key: 'directory',
-            value: null
-        },
-    ]
 };
 const mutations = {
     setData : (state, payload) => {
@@ -58,12 +59,14 @@ const actions = {
         else if (payload.hasOwnProperty.call(payload, 'result')) {
             let res = payload.result;
             if(typeof res === "undefined" || res === null) res = {};
-            context.state.defaults.forEach(prop => {
+            defaults.forEach(prop => {
                 context.commit('setDataProp', {
                     key: prop.key,
                     value: res.hasOwnProperty.call(res, prop.key) ? res[prop.key] : prop.value
                 });
             });
+            context.dispatch('extensions/init').then();
+            context.dispatch('series/init').then();
         }
     },
     writeData : (context) => {
@@ -78,17 +81,14 @@ const actions = {
                 passThrough: {flag: 'selectDirectory'}
             });
         else if (payload.result) {
-            if(!payload.result.canceled)
+            if(!payload.result.canceled) {
                 context.commit('setDataProp', {
                     key: 'directory',
                     value: payload.result.filePaths[0]
                 });
-            context.dispatch('scanDirectory').then();
+                context.dispatch('series/init').then();
+            }
         }
-    },
-    scanDirectory : (context) => {
-        // TODO: Implement function to scan a given directory for .md_data files
-        console.log('scanning ' + context.state.data.directory);
     },
 };
 
