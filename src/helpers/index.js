@@ -1,7 +1,9 @@
 const fs = require('fs');
 const { dialog } = require('electron');
+import extensions from './../extensions';
 
 export default {
+    ...extensions,
     readData : (filePath) => {
         try {
             return JSON.parse(fs.readFileSync(filePath));
