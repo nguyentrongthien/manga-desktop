@@ -11,6 +11,14 @@
                 </v-list-item-action>
                 <v-list-item-title>Home</v-list-item-title>
             </v-list-item>
+
+            <v-list-item to="/extensions">
+                <v-list-item-action>
+                    <v-icon>mdi-format-list-bulleted</v-icon>
+                </v-list-item-action>
+                <v-list-item-title>Browse</v-list-item-title>
+            </v-list-item>
+
             <v-list-item
                 v-for="item in items"
                 :key="item.text"

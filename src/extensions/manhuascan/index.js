@@ -1,3 +1,8 @@
 export default {
-    name: 'manhuascan'
+    info: {
+        name: 'ManhuaScan',
+        id: 'manhuascan',
+        version: '0.0.1',
+        baseUrl: '',
+    },
 }

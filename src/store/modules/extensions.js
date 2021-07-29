@@ -16,14 +16,18 @@ const actions = {
     },
     finishInit : (context, payload) => {
         if (payload.hasOwnProperty.call(payload, 'result')) {
-            console.log('scanning for extensions: ' + payload.result);
+            context.commit('setExtensions', payload.result);
             context.commit('setScanning', false);
+            console.log(context.getters['get']);
         }
     }
 };
 const mutations = {
     setScanning : (state, isScanning = true) => {
         state.scanning = isScanning;
+    },
+    setExtensions : (state, data) => {
+        state.extensions = data;
     }
 };
 

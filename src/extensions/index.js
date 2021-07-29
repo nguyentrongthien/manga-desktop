@@ -6,16 +6,18 @@ export default {
         let directories = fs.readdirSync('./src/extensions', { withFileTypes: true });
         for (const dir of directories) {
             if(dir.isDirectory()) {
-                let tmp = await import('./' + dir.name);
-                extensions.set(dir.name, tmp.default);
+                try {
+                    let tmp = await import('./' + dir.name);
+                    extensions.set(dir.name, tmp.default);
+                } catch (e) { console.log(e); }
             }
         }
-        return extensions.size;
+        return this.listSources();
     },
     listSources() {
         let arr = [];
         extensions.forEach((value) => {
-            arr.push(value.name);
+            arr.push(value.info);
         });
         return arr;
     },
