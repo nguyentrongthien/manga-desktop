@@ -1,55 +1,64 @@
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
+    <v-app id="inspire">
+        <v-app id="inspire">
 
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
+            <Sidebar v-model="drawer" />
 
-      <v-spacer></v-spacer>
+            <Appbar v-model="drawer" />
 
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
+            <v-main>
+                <v-fade-transition mode="out-in">
+                    <router-view :key="$route.path"></router-view>
+                </v-fade-transition>
+            </v-main>
 
-    <v-main>
-      <router-view/>
-    </v-main>
-  </v-app>
+            <v-overlay :value="isBusy" :z-index="999999" class="text-center">
+                <v-progress-circular indeterminate size="64"></v-progress-circular>
+                <h2 class="font-weight-light white--text mt-3">Loading...</h2>
+            </v-overlay>
+
+        </v-app>
+    </v-app>
 </template>
 
 <script>
+import Sidebar from "./components/cores/Sidebar";
+import Appbar from "./components/cores/Appbar";
+import { mapGetters } from 'vuex';
 
 export default {
-  name: 'App',
-
-  data: () => ({
-    //
-  }),
+    name: 'App',
+    components: {
+        Sidebar,
+        Appbar
+    },
+    props: {
+        source: String,
+    },
+    data: () => ({
+        drawer: null,
+    }),
+    created () {
+        // this.$vuetify.theme.dark = true
+        window.ipcRenderer.receive('from-main', (payload) => {
+            if(payload.passThrough) console.log(payload);
+            if(payload.passThrough) this.$store.dispatch(payload.passThrough.flag, payload);
+        })
+    },
+    mounted() {
+        this.$store.dispatch('initialize');
+        this.timer = setInterval(this.autoSave, 5000);
+    },
+    methods: {
+        autoSave () {
+            this.$store.dispatch('writeData');
+        },
+        cancelAutoUpdate () {
+            clearInterval(this.timer);
+        }
+    },
+    computed: {
+        ...mapGetters(['isBusy']),
+    }
 };
 </script>
