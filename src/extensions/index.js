@@ -8,7 +8,7 @@ export default {
             if(dir.isDirectory()) {
                 try {
                     let tmp = await import('./' + dir.name);
-                    extensions.set(dir.name, tmp.default);
+                    extensions.set(tmp.default.info.id, tmp.default);
                 } catch (e) { console.log(e); }
             }
         }
@@ -24,7 +24,9 @@ export default {
     search() {
 
     },
-    browse() {
-
+    browseSeries(extensionId) {
+        if(extensions.has(extensionId))
+            return extensions.get(extensionId).fetch();
+        else return null;
     },
 }
