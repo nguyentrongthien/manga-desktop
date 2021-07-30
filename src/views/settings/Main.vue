@@ -10,10 +10,12 @@
                 </v-row>
                 <v-row justify="center" align="center">
                     <v-col lg="11" md="10" sm="9" cols="7">
-                        <v-text-field label="Directory" :value="getDirectory" readonly></v-text-field>
+                        <v-text-field :loading="isScanning" label="Directory" :value="getDirectory" readonly></v-text-field>
                     </v-col>
                     <v-col lg="1" md="2" sm="3" cols="5">
-                        <v-btn :disabled="isScanning" @click.stop="setDirectory">Browse</v-btn>
+                        <v-btn :disabled="isScanning" @click.stop="setDirectory">
+                            {{ isScanning ? 'Scanning...' : 'Browse'}}
+                        </v-btn>
                     </v-col>
                 </v-row>
             </v-col>

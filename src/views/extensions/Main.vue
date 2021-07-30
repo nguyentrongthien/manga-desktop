@@ -8,9 +8,9 @@
                     </v-col>
 
                 </v-row>
-                <v-row justify="center" align="center">
-                    <v-col lg="3" md="4" sm="6" cols="12" v-for="(ext, index) in extensions" :key="index">
-                        <v-card color="#385F73" dark>
+                <v-row justify="center" align="stretch">
+                    <v-col lg="4" sm="6" cols="12" v-for="(ext, index) in extensions" :key="index">
+                        <v-card color="#385F73" dark class="fill-height" @click.stop="browse(ext.id)">
                             <v-card-title class="text-h5">
                                 {{ ext.name }}
                             </v-card-title>
@@ -19,11 +19,9 @@
                                 Version: {{ ext.version }}
                             </v-card-subtitle>
 
-                            <v-card-actions>
-                                <v-btn text>
-                                    Browse
-                                </v-btn>
-                            </v-card-actions>
+                            <v-card-subtitle>
+                                Base URL: {{ ext.baseUrl }}
+                            </v-card-subtitle>
                         </v-card>
                     </v-col>
                 </v-row>
@@ -43,12 +41,14 @@ export default {
 
     },
     methods: {
-        async setDirectory() {
-            await this.$store.dispatch('selectDirectory');
+        browse(extensionId) {
+            this.$store.dispatch('extensions/browse', extensionId);
+            this.$router.push({path: '/series'})
         },
     },
     computed: {
         ...mapGetters('extensions', ['isScanning']),
+        ...mapGetters('series', ['isLoading']),
         extensions() {
             return this.$store.getters['extensions/get'];
         },

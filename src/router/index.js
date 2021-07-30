@@ -27,7 +27,12 @@ const routes = [
         path: '/extensions',
         name: 'Extensions',
         component: () => import(/* webpackChunkName: "extensions-main" */ '../views/extensions/Main.vue')
-    }
+    },
+    {
+        path: '/series',
+        name: 'Series',
+        component: () => import(/* webpackChunkName: "series-main" */ '../views/series/Main.vue')
+    },
 ]
 
 const router = new VueRouter({
