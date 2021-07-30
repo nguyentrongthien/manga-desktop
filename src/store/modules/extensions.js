@@ -1,6 +1,9 @@
 const state = {
     extensions: [],
     scanning: false,
+    pagination: {
+        current: 1,
+    }
 };
 const getters = {
     get : state => state.extensions,
@@ -18,8 +21,13 @@ const actions = {
         if (payload.hasOwnProperty.call(payload, 'result')) {
             context.commit('setExtensions', payload.result);
             context.commit('setScanning', false);
-            console.log(context.getters['get']);
         }
+    },
+    browse : (context, id) => {
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'browseSeries', payload: id, passThrough: {flag: 'series/receiveSeries'}
+        });
+        context.commit('series/setLoading', true, {root: true});
     }
 };
 const mutations = {
