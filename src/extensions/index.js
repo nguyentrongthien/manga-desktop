@@ -29,4 +29,12 @@ export default {
             return extensions.get(extensionId).fetch();
         else return null;
     },
+    viewSeries(url) {
+        for(let key of Array.from(extensions.keys())) {
+            if(url.includes(key)) {
+                return extensions.get(key).getSeriesInfo(url);
+            }
+        }
+        throw('Extension for ' + url + ' could not be found');
+    }
 }
