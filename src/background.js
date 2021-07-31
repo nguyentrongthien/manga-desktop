@@ -18,8 +18,8 @@ async function createWindow() {
   // Create the browser window.
   const win = new BrowserWindow({
     title: "Manga Desktop",
-    width: 800,
-    height: 600,
+    width: 1900,
+    height: 1000,
     webPreferences: {
       
       // Use pluginOptions.nodeIntegration, leave this alone
@@ -79,8 +79,12 @@ app.on('ready', async () => {
 // Handle message coming from Renderer (check for output in terminal, not web dev console)
 ipcMain.on('from-renderer', async (event, args) => {
   if(typeof helperFunctions[args.fn] !== "undefined") {
-    let res = await helperFunctions[args.fn](args.payload);
-    event.reply('from-main', { result: res, passThrough: args.passThrough});
+    try {
+      let res = await helperFunctions[args.fn](args.payload);
+      event.reply('from-main', { result: res, passThrough: args.passThrough});
+    } catch (e) {
+      event.reply('from-main', { error: e.toString(), passThrough: args.passThrough});
+    }
   }
   else console.error('function [' + args.fn + '] is not found in helper functions.');
 })
