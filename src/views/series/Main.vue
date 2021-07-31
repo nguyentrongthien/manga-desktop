@@ -7,12 +7,12 @@
                         <h1>Manga Series</h1>
                         <h3 v-show="isLoading">Loading...</h3>
                     </v-col>
-
                 </v-row>
+
                 <v-row justify="center" align="stretch">
                     <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
-                        <v-card class="mx-auto fill-height" max-width="400" @click.stop="read(comic.url)">
+                        <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url)">
                             <v-img height="370" :src="comic.img" class="white--text align-end"
                                    gradient="to bottom, rgba(0,0,0,0), rgba(0,0,0,.7)">
                                 <v-card-title class="py-2">{{ comic.title }}</v-card-title>
@@ -28,8 +28,12 @@
                                     <div class="grey--text ml-4">4.5 (413)</div>
                                 </v-row>
 
-                                <div class="my-4 subtitle-2">
-                                    $ • Manga
+                                <div class="mt-4 subtitle-1">
+                                    {{ comic.latestChapter }}
+                                </div>
+
+                                <div class="mb-4 caption grey--text lighten-3">
+                                    Views: {{ comic.views }}
                                 </div>
                                 <div class="grey--text">
                                     {{ comic.url }}
@@ -56,8 +60,9 @@ export default {
 
     },
     methods: {
-        read() {
-
+        view(seriesUrl) {
+            this.$store.dispatch('series/view', seriesUrl);
+            this.$router.push({path: '/series/detail'})
         }
     },
     computed: {

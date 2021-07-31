@@ -4,12 +4,16 @@ const state = {
     current: [],
     scanning: false,
     loading: false,
+    selected: {},
+    error: null,
 };
 const getters = {
     get : state => state.series,
     getCurrent : state => state.current,
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
+    selectedSeries : state => state.selected,
+    getError : state => state.error,
 };
 const actions = {
     init : (context) => {
@@ -22,6 +26,22 @@ const actions = {
             context.commit('setCurrent', payload.result);
             context.commit('setLoading', false);
         }
+    },
+    view : (context, url) => {
+        context.commit('setLoading');
+        context.commit('setError');
+        console.log(context.state.loading);
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'viewSeries', payload: url, passThrough: {flag: 'series/receiveDetail'}
+        });
+    },
+    receiveDetail : (context, payload) => {
+        if (payload.hasOwnProperty.call(payload, 'result')) {
+            context.commit('setSelectedSeries', payload.result);
+        } else if (payload.hasOwnProperty.call(payload, 'error')) {
+            context.commit('setError', payload.error);
+        }
+        context.commit('setLoading', false);
     }
 };
 const mutations = {
@@ -33,6 +53,12 @@ const mutations = {
     },
     setCurrent : (state, series) => {
         state.current = series;
+    },
+    setSelectedSeries : (state, detail) => {
+        state.selected = detail;
+    },
+    setError : (state, error = null) => {
+        state.error = error;
     }
 };
 
