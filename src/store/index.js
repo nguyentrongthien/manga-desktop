@@ -2,7 +2,7 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import modules from './modules';
 
-const filePath = '.md_data';
+const fileName = '.md_data';
 
 /**
  * Check registred module
@@ -28,6 +28,10 @@ const defaults = [
         key: 'directory',
         value: null
     },
+    {
+        key: 'cache',
+        value: null
+    },
 ];
 
 const state = {
@@ -49,12 +53,13 @@ const mutations = {
 const getters = {
     isBusy : state => state.busy,
     getDirectory : state => state.data.directory,
+    getCache : state => state.data.cache,
 };
 const actions = {
     initialize : (context, payload) => {
         if(!payload)
             window.ipcRenderer.send('from-renderer', {
-                fn: 'readData', payload: './' + filePath, passThrough: {flag: 'initialize'}
+                fn: 'readData', payload: './' + fileName, passThrough: {flag: 'initialize'}
             });
         else if (payload.hasOwnProperty.call(payload, 'result')) {
             let res = payload.result;
@@ -71,7 +76,7 @@ const actions = {
     },
     writeData : (context) => {
         if(context.state.data.version) { // Check if data has already been initialized (might have concurrency issue)
-            writeToDisc({ path: './' + filePath, data: context.state.data });
+            writeToDisc({ path: './', file: fileName, data: context.state.data });
         }
     },
     selectDirectory : (context, payload) => {
@@ -87,6 +92,21 @@ const actions = {
                     value: payload.result.filePaths[0]
                 });
                 context.dispatch('series/init').then();
+            }
+        }
+    },
+    selectCache : (context, payload) => {
+        if(!payload)
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'getDir',
+                passThrough: {flag: 'selectCache'}
+            });
+        else if (payload.result) {
+            if(!payload.result.canceled) {
+                context.commit('setDataProp', {
+                    key: 'cache',
+                    value: payload.result.filePaths[0]
+                });
             }
         }
     },

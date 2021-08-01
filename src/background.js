@@ -21,7 +21,10 @@ async function createWindow() {
     width: 1900,
     height: 1000,
     webPreferences: {
-      
+
+      // Set to false to allow renderer to load images from local disk
+      webSecurity: false,
+
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,

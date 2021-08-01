@@ -10,10 +10,20 @@
                 </v-row>
                 <v-row justify="center" align="center">
                     <v-col lg="11" md="10" sm="9" cols="7">
-                        <v-text-field :loading="isScanning" label="Directory" :value="getDirectory" readonly></v-text-field>
+                        <v-text-field :loading="isScanning" label="Manga's Directory" :value="getDirectory" readonly></v-text-field>
                     </v-col>
                     <v-col lg="1" md="2" sm="3" cols="5">
                         <v-btn :disabled="isScanning" @click.stop="setDirectory">
+                            {{ isScanning ? 'Scanning...' : 'Browse'}}
+                        </v-btn>
+                    </v-col>
+                </v-row>
+                <v-row justify="center" align="center">
+                    <v-col lg="11" md="10" sm="9" cols="7">
+                        <v-text-field :loading="isScanning" label="Cache Directory" :value="getCache" readonly></v-text-field>
+                    </v-col>
+                    <v-col lg="1" md="2" sm="3" cols="5">
+                        <v-btn :disabled="isScanning" @click.stop="setCache">
                             {{ isScanning ? 'Scanning...' : 'Browse'}}
                         </v-btn>
                     </v-col>
@@ -37,9 +47,12 @@ export default {
         async setDirectory() {
             await this.$store.dispatch('selectDirectory');
         },
+        async setCache() {
+            await this.$store.dispatch('selectCache');
+        },
     },
     computed: {
-        ...mapGetters(['getDirectory']),
+        ...mapGetters(['getDirectory', 'getCache']),
         ...mapGetters('series', ['isScanning']),
     }
 }
