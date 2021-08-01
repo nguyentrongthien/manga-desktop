@@ -1,5 +1,6 @@
 const fs = require('fs');
 let extensions = new Map();
+import downloader from './downloader';
 
 export default {
     async initExtensions() {
@@ -44,5 +45,12 @@ export default {
             }
         }
         throw('Extension for ' + payload.url + ' could not be found');
+    },
+    async downloadFile(payload) {
+        return await downloader(
+            payload.url,
+            payload.fileName,
+            payload.outputPath
+        )
     }
 }

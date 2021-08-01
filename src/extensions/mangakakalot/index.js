@@ -119,32 +119,25 @@ async function getInfo(url) {
 
 async function getPages(payload) {
     try {
-        let images = [];
         let resp = await axiosGet(payload.url);
         let $ = cheerio.load(resp.data);
         let promises = [];
-        let rnd = randomString(10);
         await $('.container-chapter-reader > img').each(async (index, element) => {
             let url = $(element).attr('src');
-            let output = payload.outputPath + '\\' + index.toString().padStart(5, '0') + '.' + getImageExtension(url);
-            images.push(output + "?rnd=" + rnd);
-            promises.push(downloader(url, expObj.info.baseUrl ,output));
+            promises.push(downloader(
+                url,
+                index.toString().padStart(5, '0'),
+                payload.outputPath,
+                expObj.info.baseUrl,
+                true
+            ));
         })
-        await Promise.allSettled(promises);
-        return images;
+        let results = await Promise.allSettled(promises);
+        return results.map(result => {
+            if(result.status === 'fulfilled')
+                return result.value;
+        });
     } catch (e) { console.log(e); }
-}
-
-function randomString(length) {
-    let result = '';
-    let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-    return result;
-}
-
-function getImageExtension(url) {
-    let tmp = url.split('.');
-    return tmp[tmp.length - 1];
 }
 
 async function axiosGet(url) {

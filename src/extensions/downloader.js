@@ -1,7 +1,7 @@
 import Axios from 'axios';
 const fs = require('fs');
 
-export default async function (fileUrl, referer, outputLocationPath) {
+async function download(fileUrl, referer, outputLocationPath) {
     const writer = fs.createWriteStream(outputLocationPath);
 
     return Axios({
@@ -34,4 +34,11 @@ export default async function (fileUrl, referer, outputLocationPath) {
             });
         });
     });
+}
+
+export default async function (fileUrl, fileName, targetLocation, referer, keepExtension = true){
+    let tmp = fileUrl.split('.');
+    let extension = keepExtension ? '.' + tmp[tmp.length - 1] : '';
+    let path = targetLocation + '/' + fileName + extension;
+    return await download(fileUrl, referer ? referer : fileUrl, path)
 }

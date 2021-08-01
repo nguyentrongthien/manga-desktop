@@ -105,6 +105,18 @@ const actions = {
                 seriesInfo: context.getters['selectedSeries']
             }
         });
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'downloadFile',
+            payload: {
+                url: context.getters['selectedSeries'].img,
+                fileName: 'cover',
+                outputPath: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
+            },
+            passThrough: {
+                flag: 'series/coverDownloaded',
+                hash: context.getters['selectedSeries'].hash
+            }
+        });
     },
     saveSelectedSeriesComplete : (context, payload) => {
         handleReply(context, payload,
@@ -115,6 +127,18 @@ const actions = {
             () => {context.commit('setError', payload.error);}
         )
         context.commit('setSaving', false);
+    },
+    coverDownloaded : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                context.commit('updateLocalSeriesByHash', {
+                    hash: payload.passThrough.hash,
+                    key: 'img',
+                    value: payload.result
+                })
+            },
+            () => {context.commit('setError', payload.error);}
+        )
     }
 };
 
@@ -141,10 +165,20 @@ const mutations = {
         state.selected.reading = chapter >= 0 && chapter < state.selected.chapters.length ? chapter : 0;
     },
     setImagesOfCurrentChapter : (state, images) => {
-        state.selected.chapters[state.selected.reading].images = images;
+        let rnd = randomString(10);
+        state.selected.chapters[state.selected.reading].images.splice(0);
+        state.selected.chapters[state.selected.reading].images = images.map(file => file + '?rnd=' + rnd);
     },
     addSeriesToLocal : (state, series) => {
         state.local.push(series);
+    },
+    updateLocalSeriesByHash : (state, payload) => {
+        for (let series of state.local) {
+            if(series.hash.toString() === payload.hash.toString()) {
+                series[payload.key] = payload.value;
+                break;
+            }
+        }
     }
 };
 
@@ -157,6 +191,13 @@ function handleReply(context, payload, succeed, fail) {
 
 function getHashFromString(string) {
     return createHash('sha256').update(string).digest('hex');
+}
+
+function randomString(length) {
+    let result = '';
+    let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
 }
 
 export default {
