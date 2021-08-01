@@ -2,8 +2,7 @@
     <v-container class="fill-height py-5">
         <v-row justify="center" class="fill-height">
             <v-col sm="11" cols="12">
-                <v-row v-if="isLoading">Loading....</v-row>
-                <v-row v-else-if="getError" justify="center">
+                <v-row v-if="getError" justify="center">
                     <v-col cols="12">
                         <h2 class="text-center red--text">
                             {{ getError }}
@@ -16,10 +15,12 @@
                     </v-col>
 
                 </v-row>
-                <v-row v-else justify="center" align="start">
+                <v-row justify="center" align="start">
                     <v-col sm="4" cols="12">
-                        <v-card class="mx-auto fill-height" max-width="400" shaped>
-                            <v-img max-width="400" contain :src="selectedSeries.img"></v-img>
+                        <v-card class="mx-auto fill-height" max-width="400" shaped :loading="isLoading">
+                            <v-img max-width="400" contain
+                                   :src="selectedSeries.img ? selectedSeries.img : $store.getters['placeholderImg']">
+                            </v-img>
 
                             <v-card-text>
                                 <v-row align="center" class="mx-0 my-1">
@@ -34,10 +35,10 @@
                                     Author(s): {{ authors }}
                                 </div>
                                 <div class="mt-3 caption">
-                                    Status: {{ selectedSeries.status }}
+                                    Status: {{ selectedSeries.status ? selectedSeries.status : '' }}
                                 </div>
                                 <div class="mt-3 caption">
-                                    Views: {{ selectedSeries.views }}
+                                    Views: {{ selectedSeries.views ? selectedSeries.views : '' }}
                                 </div>
                                 <div class="mt-3 caption">
                                     Genres: {{ genres }}
@@ -48,15 +49,15 @@
 
                     <v-col sm="8" cols="12">
 
-                        <v-card class="mx-auto" outlined color="#000">
+                        <v-card class="mx-auto" outlined color="#000" :loading="isLoading">
 
                             <v-card-text>
 
                                 <h2>
-                                    {{ selectedSeries.title }}
+                                    {{ selectedSeries.title ? selectedSeries.title : 'No Title' }}
                                 </h2>
                                 <p class="font-weight-light subtitle-1 py-4">
-                                    {{ selectedSeries.summary }}
+                                    {{ selectedSeries.summary ? selectedSeries.summary : 'No Description' }}
                                 </p>
                                 <v-row class="mx-0">
                                     <v-btn outlined color="grey" @click.stop="$router.back()">
@@ -72,44 +73,45 @@
                                            title="Add to library" :loading="isSaving" @click="saveSeries">
                                         <v-icon>mdi-bookmark-plus-outline</v-icon>
                                     </v-btn>
-                                    <v-btn color="red" outlined>
+                                    <v-btn color="red" outlined @click.stop="readFirstChapter">
                                         start reading <v-icon>mdi-play</v-icon>
                                     </v-btn>
                                 </v-row>
                             </v-card-text>
 
                             <v-divider class="mt-10"></v-divider>
-                            <v-simple-table>
-                                <template v-slot:default>
-                                    <thead>
-                                    <tr>
-                                        <th class="text-left">
-                                            Chapters
-                                        </th>
-                                        <th class="text-left" style="max-width: 60px;">
-                                            Updated
-                                        </th>
-                                        <th class="text-right" style="max-width: 20px;"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr v-for="(item, index) in selectedSeries.chapters"
-                                        :key="item.name"
-                                    >
-                                        <td>
-                                            <a @click.stop="read(index)">{{ item.name }}</a>
-                                        </td>
-                                        <td style="width: 160px;">{{ item.updated }}</td>
-                                        <td style="width: 20px;">
+
+                            <v-virtual-scroll v-if="selectedSeries.chapters"
+                                :bench="0"
+                                :items="selectedSeries.chapters"
+                                height="600"
+                                item-height="64"
+                            >
+                                <template v-slot:default="{ item }">
+                                    <v-list-item :key="item.hash">
+                                        <v-list-item-content>
+                                            <v-list-item-title>
+                                                <a @click.stop="read(index)">{{ item.name }}</a>
+                                            </v-list-item-title>
+                                            <v-list-item-subtitle class="mt-1 caption">
+                                                {{ item.updated }}
+                                            </v-list-item-subtitle>
+                                        </v-list-item-content>
+
+                                        <v-spacer></v-spacer>
+
+                                        <v-list-item-action>
                                             <v-icon v-if="item.isDownloaded" color="green" small>mdi-check</v-icon>
                                             <v-btn v-else icon small color="red" @click.stop="download(item.url)" :disabled="isSaving">
                                                 <v-icon small>mdi-arrow-collapse-down</v-icon>
                                             </v-btn>
-                                        </td>
-                                    </tr>
-                                    </tbody>
+                                        </v-list-item-action>
+                                    </v-list-item>
+
+                                    <v-divider></v-divider>
                                 </template>
-                            </v-simple-table>
+                            </v-virtual-scroll>
+
                         </v-card>
 
                     </v-col>
@@ -135,6 +137,9 @@ export default {
             this.$store.dispatch('series/requestChapter', index);
             this.$router.push({path: '/reader'})
         },
+        readFirstChapter() {
+            this.read(this.selectedSeries.chapters.length - 1);
+        },
         download() {
 
         },
@@ -145,10 +150,10 @@ export default {
     computed: {
         ...mapGetters('series', ['isLoading', 'selectedSeries', 'getError', 'getSeriesFromLocalByHash', 'isSaving']),
         authors() {
-            return this.selectedSeries.authors.join(', ');
+            return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : '';
         },
         genres() {
-            return this.selectedSeries.genres.join(', ');
+            return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : '';
         }
     }
 }

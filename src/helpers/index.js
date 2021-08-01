@@ -20,4 +20,16 @@ export default {
             properties: multiple === true ? ['openDirectory', 'multiSelections'] : ['openDirectory']
         });
     },
+    scanDir : (args) => {
+        let data = [];
+        let directories = fs.readdirSync(args.path, { withFileTypes: true });
+        for (const dir of directories) {
+            if(dir.isDirectory()) {
+                try {
+                    data.push(JSON.parse(fs.readFileSync(args.path + '/' + dir.name + '/' + args.fileName)));
+                } catch (e) { console.log(e); }
+            }
+        }
+        return data;
+    }
 }

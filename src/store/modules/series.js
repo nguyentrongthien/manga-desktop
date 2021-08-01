@@ -23,7 +23,6 @@ const getters = {
     getError : state => state.error,
     currentChapter : state => state.selected.chapters[state.selected.reading],
     getSeriesFromLocalByHash : state => (hash, returnObject = false) => {
-        console.log(hash);
         for (let series of state.local) {
             if(series.hash.toString() === hash.toString())
                 return returnObject ? series : true;
@@ -34,9 +33,26 @@ const getters = {
 };
 const actions = {
     init : (context) => {
-        // TODO: Implement function to scan a given directory for .md_data files
-        if(context.rootGetters['getDirectory'])
-            console.log('scanning ' + context.rootGetters['getDirectory']);
+        context.commit('setScanning');
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'scanDir',
+            payload: {
+                path: context.rootGetters['getDirectory'],
+                fileName: fileName,
+            },
+            passThrough: {flag: 'series/initComplete'}
+        });
+    },
+    initComplete : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                payload.result.forEach(series => {
+                    context.commit('addSeriesToLocal', series);
+                })
+                context.commit('setScanning', false);
+            },
+            () => {context.commit('setError', payload.error);}
+        )
     },
     receiveSeries : (context, payload) => {
         if (payload.hasOwnProperty.call(payload, 'result')) {
@@ -47,9 +63,9 @@ const actions = {
     requestDetail : (context, url) => {
         context.commit('setLoading');
         context.commit('setError');
-        let series = context.getters['getSeriesFromLocalByHash'](
-            getHashFromString(url), true
-        );
+
+        // Check if this series is available on local
+        let series = context.getters['getSeriesFromLocalByHash'](getHashFromString(url), true);
         if(series) {
             context.commit('setSelectedSeries', series);
             context.commit('setLoading', false);
@@ -121,7 +137,6 @@ const actions = {
     saveSelectedSeriesComplete : (context, payload) => {
         handleReply(context, payload,
             () => {
-                console.log(payload.passThrough.seriesInfo);
                 context.commit('addSeriesToLocal', payload.passThrough.seriesInfo)
             },
             () => {context.commit('setError', payload.error);}

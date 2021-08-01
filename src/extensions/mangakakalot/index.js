@@ -28,7 +28,6 @@ const expObj = {
 }
 
 function isUrlValid(url) {
-    console.log(url);
     return url.includes(expObj.info.id)
 }
 

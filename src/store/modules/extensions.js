@@ -11,7 +11,6 @@ const getters = {
 };
 const actions = {
     init : (context) => {
-        console.log('scanning for extensions...');
         context.commit('setScanning');
         window.ipcRenderer.send('from-renderer', {
             fn: 'initExtensions', payload: null, passThrough: {flag: 'extensions/finishInit'}

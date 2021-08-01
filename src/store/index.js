@@ -37,6 +37,7 @@ const defaults = [
 const state = {
     busy: false,
     version: "0.0.1",
+    placeholder_img: require('./../plugins/base64_img').default,
     data: {},
 };
 const mutations = {
@@ -54,6 +55,7 @@ const getters = {
     isBusy : state => state.busy,
     getDirectory : state => state.data.directory,
     getCache : state => state.data.cache,
+    placeholderImg : state => state.placeholder_img,
 };
 const actions = {
     initialize : (context, payload) => {
