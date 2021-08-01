@@ -36,5 +36,13 @@ export default {
             }
         }
         throw('Extension for ' + url + ' could not be found');
+    },
+    viewChapter(payload) {
+        for(let key of Array.from(extensions.keys())) {
+            if(payload.url.includes(key)) {
+                return extensions.get(key).getChapterImages(payload);
+            }
+        }
+        throw('Extension for ' + payload.url + ' could not be found');
     }
 }

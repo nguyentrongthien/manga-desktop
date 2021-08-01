@@ -11,7 +11,8 @@ export default {
     },
     writeData : (args) => {
         try {
-            fs.writeFileSync(args.path, JSON.stringify(args.data));
+            if(!fs.existsSync(args.path)) fs.mkdirSync(args.path, {recursive: true});
+            fs.writeFileSync(args.path + '/' + args.file, JSON.stringify(args.data));
         } catch(e) { console.log(e); }
     },
     getDir : async (multiple = false) => {

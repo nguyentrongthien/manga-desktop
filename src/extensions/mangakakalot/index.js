@@ -1,5 +1,7 @@
 import axios from "axios";
 import cheerio from "cheerio";
+import downloader from './../downloader';
+import { createHash } from 'crypto';
 
 // https://mangakakalot.com/manga_list?type=topview&category=all&state=All&page=1
 
@@ -8,33 +10,31 @@ const expObj = {
         name: 'MangaKakalot',
         id: 'mangakakalot.com',
         version: '0.0.1',
-        baseUrl: 'https://mangakakalot.com/manga_list',
+        baseUrl: 'https://mangakakalot.com',
     },
     fetch() {
         return getSeries();
     },
     getSeriesInfo(url) {
-        if(url.includes(this.info.id)) {
+        if(isUrlValid(url)) {
             return getInfo(url);
         } else return null;
-    }
+    },
+    getChapterImages(payload) {
+        if(isUrlValid(payload.url)) {
+            return getPages(payload);
+        } else return null;
+    },
 }
 
-// let params = {
-//     type: {
-//         topview: 'topview'
-//     },
-//     category: {
-//         all: 'all'
-//     },
-//     state: {
-//         all: 'All'
-//     }
-// }
+function isUrlValid(url) {
+    console.log(url);
+    return url.includes(expObj.info.id)
+}
 
 async function getSeries() {
     try {
-        let resp = await axios.get(expObj.info.baseUrl);
+        let resp = await axiosGet(expObj.info.baseUrl + '/manga_list?type=topview&category=all&state=all&page=1');
         let series = [];
         let $ = cheerio.load(resp.data);
         $('.list-truyen-item-wrap').each((index, element) => {
@@ -55,9 +55,13 @@ async function getSeries() {
 async function getInfo(url) {
     try {
         let obj = {};
-        let resp = await axios.get(url);
+        let resp = await axiosGet(url);
         let $ = cheerio.load(resp.data);
         let infoEl = $($('.manga-info-text').get(0));
+        obj.url = url;
+        obj.sourceId = expObj.info.id;
+        obj.hash = getHashFromString(url);
+        obj.isSaved = false;
         infoEl.children('li').each((i, el) => {
             if($(el).find('h1').length > 0 && !obj.title) {
                 obj.title = $($(el).find('h1').get(0)).html();
@@ -86,7 +90,7 @@ async function getInfo(url) {
         obj.img = $($($('.manga-info-pic').get(0)).find('img').get(0)).attr('src')
         obj.summary = $($('#noidungm').get(0)).text();
         obj.chapters = [];
-        $($('div#chapter > div.manga-info-chapter > div.chapter-list').get(0)).children('div.row').each((i, el) => {
+        $($('div#chapter > div.manga-info-chapter > div.chapter-list').get(0)).children('div.row').each((index, el) => {
             let tmp = {};
             $(el).children('span').each((i, childEl) => {
                 if($(childEl).html().toLowerCase().includes('href') && $(childEl).html().toLowerCase().includes('title')) {
@@ -99,11 +103,60 @@ async function getInfo(url) {
                 } else if (!tmp.views) {
                     tmp.views = $(childEl).text();
                 }
+                tmp.isRead = false;
+                tmp.isDownloaded = false;
+                tmp.hash = getHashFromString(url);
+                tmp.order = index;
+                tmp.images = [];
             })
             obj.chapters.push(tmp);
         })
+
+        obj.reading = obj.chapters.length - 1;
         return obj;
     } catch (e) { console.log(e); }
+}
+
+async function getPages(payload) {
+    try {
+        let images = [];
+        let resp = await axiosGet(payload.url);
+        let $ = cheerio.load(resp.data);
+        let promises = [];
+        let rnd = randomString(10);
+        await $('.container-chapter-reader > img').each(async (index, element) => {
+            let url = $(element).attr('src');
+            let output = payload.outputPath + '\\' + index.toString().padStart(5, '0') + '.' + getImageExtension(url);
+            images.push(output + "?rnd=" + rnd);
+            promises.push(downloader(url, expObj.info.baseUrl ,output));
+        })
+        await Promise.allSettled(promises);
+        return images;
+    } catch (e) { console.log(e); }
+}
+
+function randomString(length) {
+    let result = '';
+    let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
+}
+
+function getImageExtension(url) {
+    let tmp = url.split('.');
+    return tmp[tmp.length - 1];
+}
+
+async function axiosGet(url) {
+    return await axios.get(url, {
+        headers: {
+            "Referer": expObj.info.baseUrl
+        }
+    });
+}
+
+function getHashFromString(string) {
+    return createHash('sha256').update(string).digest('hex');
 }
 
 export default expObj;
