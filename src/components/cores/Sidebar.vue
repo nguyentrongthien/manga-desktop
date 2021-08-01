@@ -1,9 +1,6 @@
 <template>
-    <v-navigation-drawer
-        v-model="drawer"
-        app
-        clipped
-    >
+    <v-navigation-drawer v-model="drawer"
+        app clipped color="black">
         <v-list dense>
             <v-list-item to="/">
                 <v-list-item-action>

@@ -2,16 +2,10 @@
     <v-app-bar
         app
         clipped-left
-        color="grey"
+        color="grey darken-4"
         dense
     >
         <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-        <!--                <v-icon-->
-        <!--                    class="mx-4"-->
-        <!--                    large-->
-        <!--                >-->
-        <!--                    mdi-youtube-->
-        <!--                </v-icon>-->
         <v-toolbar-title class="mr-12 align-center">
             <span class="title">Manga Desktop</span>
         </v-toolbar-title>
