@@ -61,7 +61,7 @@ export default {
     },
     methods: {
         view(seriesUrl) {
-            this.$store.dispatch('series/view', seriesUrl);
+            this.$store.dispatch('series/requestDetail', seriesUrl);
             this.$router.push({path: '/series/detail'})
         }
     },

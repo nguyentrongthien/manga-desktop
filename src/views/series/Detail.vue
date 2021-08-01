@@ -49,29 +49,6 @@
                     <v-col sm="8" cols="12">
 
                         <v-card class="mx-auto" outlined color="#000">
-<!--                            <v-toolbar flat>-->
-<!--                                <v-btn-->
-<!--                                    icon-->
-<!--                                    class="hidden-xs-only"-->
-<!--                                >-->
-<!--                                    <v-icon>mdi-arrow-left</v-icon>-->
-<!--                                </v-btn>-->
-<!--                                <v-toolbar-title class="grey&#45;&#45;text">-->
-
-<!--                                </v-toolbar-title>-->
-
-<!--                                <v-spacer></v-spacer>-->
-<!--                                <v-btn icon>-->
-<!--                                    <v-icon>mdi-heart</v-icon>-->
-<!--                                </v-btn>-->
-
-<!--                                <v-btn icon>-->
-<!--                                    <v-icon>mdi-dots-vertical</v-icon>-->
-<!--                                </v-btn>-->
-<!--                            </v-toolbar>-->
-
-<!--                            <v-divider></v-divider>-->
-
 
                             <v-card-text>
 
@@ -87,7 +64,14 @@
                                     </v-btn>
                                     <v-spacer></v-spacer>
                                     <v-btn icon class="mx-2"><v-icon>mdi-share</v-icon></v-btn>
-                                    <v-btn icon class="mx-2"><v-icon>mdi-heart</v-icon></v-btn>
+                                    <v-btn v-if="getSeriesFromLocalByHash(selectedSeries.hash)"
+                                           icon class="mx-2" color="green">
+                                        <v-icon>mdi-bookmark-check-outline</v-icon>
+                                    </v-btn>
+                                    <v-btn v-else icon class="mx-2" color="red"
+                                           title="Add to library" :loading="isSaving" @click="saveSeries">
+                                        <v-icon>mdi-bookmark-plus-outline</v-icon>
+                                    </v-btn>
                                     <v-btn color="red" outlined>
                                         start reading <v-icon>mdi-play</v-icon>
                                     </v-btn>
@@ -102,19 +86,26 @@
                                         <th class="text-left">
                                             Chapters
                                         </th>
-                                        <th class="text-left">
+                                        <th class="text-left" style="max-width: 60px;">
                                             Updated
                                         </th>
+                                        <th class="text-right" style="max-width: 20px;"></th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <tr
-                                        v-for="item in selectedSeries.chapters"
+                                    <tr v-for="(item, index) in selectedSeries.chapters"
                                         :key="item.name"
-                                        @click.stop="read"
                                     >
-                                        <td>{{ item.name }}</td>
-                                        <td>{{ item.updated }}</td>
+                                        <td>
+                                            <a @click.stop="read(index)">{{ item.name }}</a>
+                                        </td>
+                                        <td style="width: 160px;">{{ item.updated }}</td>
+                                        <td style="width: 20px;">
+                                            <v-icon v-if="item.isDownloaded" color="green" small>mdi-check</v-icon>
+                                            <v-btn v-else icon small color="red" @click.stop="download(item.url)" :disabled="isSaving">
+                                                <v-icon small>mdi-arrow-collapse-down</v-icon>
+                                            </v-btn>
+                                        </td>
                                     </tr>
                                     </tbody>
                                 </template>
@@ -140,12 +131,19 @@ export default {
         this.index = this.$route.params.index;
     },
     methods: {
-        read() {
+        read(index) {
+            this.$store.dispatch('series/requestChapter', index);
+            this.$router.push({path: '/reader'})
+        },
+        download() {
 
+        },
+        saveSeries() {
+            this.$store.dispatch('series/saveSelectedSeriesToDisk');
         }
     },
     computed: {
-        ...mapGetters('series', ['isLoading', 'selectedSeries', 'getError']),
+        ...mapGetters('series', ['isLoading', 'selectedSeries', 'getError', 'getSeriesFromLocalByHash', 'isSaving']),
         authors() {
             return this.selectedSeries.authors.join(', ');
         },

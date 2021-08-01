@@ -38,6 +38,11 @@ const routes = [
         name: 'Series Detail',
         component: () => import(/* webpackChunkName: "series-detail" */ '../views/series/Detail.vue')
     },
+    {
+        path: '/reader',
+        name: 'Reader',
+        component: () => import(/* webpackChunkName: "reader-main" */ '../views/reader/Main.vue')
+    },
 ]
 
 const router = new VueRouter({
