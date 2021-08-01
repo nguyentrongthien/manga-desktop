@@ -23,21 +23,6 @@
                 <v-list-item-title>Browse</v-list-item-title>
             </v-list-item>
 
-<!--            <v-list-item-->
-<!--                v-for="item in items"-->
-<!--                :key="item.text"-->
-<!--                link-->
-<!--            >-->
-<!--                <v-list-item-action>-->
-<!--                    <v-icon>{{ item.icon }}</v-icon>-->
-<!--                </v-list-item-action>-->
-<!--                <v-list-item-content>-->
-<!--                    <v-list-item-title>-->
-<!--                        {{ item.text }}-->
-<!--                    </v-list-item-title>-->
-<!--                </v-list-item-content>-->
-<!--            </v-list-item>-->
-
             <v-divider></v-divider>
 
             <v-list-item to="/settings">
@@ -53,31 +38,15 @@
 <script>
 export default {
     name: "Sidebar",
-    props: ['value'],
-    data: () => ({
-        drawer: null,
-        items: [
-            { icon: 'mdi-trending-up', text: 'Most Popular' },
-            { icon: 'mdi-youtube-subscription', text: 'Subscriptions' },
-            { icon: 'mdi-history', text: 'History' },
-            { icon: 'mdi-playlist-play', text: 'Playlists' },
-            { icon: 'mdi-clock', text: 'Watch Later' },
-        ],
-        items2: [
-            { picture: 28, text: 'Joseph' },
-            { picture: 38, text: 'Apple' },
-            { picture: 48, text: 'Xbox Ahoy' },
-            { picture: 58, text: 'Nokia' },
-            { picture: 78, text: 'MKBHD' },
-        ],
-    }),
-    watch: {
-        value(val) {
-            this.drawer = val;
-        },
-        drawer(val) {
-            this.$emit('input', val);
-        },
+    computed: {
+        drawer: {
+            get() {
+                return this.$store.getters['drawer'];
+            },
+            set(value) {
+                this.$store.commit('setDrawer', value);
+            }
+        }
     }
 }
 </script>

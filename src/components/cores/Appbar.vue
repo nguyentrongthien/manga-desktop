@@ -29,17 +29,15 @@
 <script>
 export default {
     name: "Appbar",
-    props: ['value'],
-    data: () => ({
-        drawer: null,
-    }),
-    watch: {
-        value(val) {
-            this.drawer = val;
-        },
-        drawer(val) {
-            this.$emit('input', val);
-        },
+    computed: {
+        drawer: {
+            get() {
+                return this.$store.getters['drawer'];
+            },
+            set(value) {
+                this.$store.commit('setDrawer', value);
+            }
+        }
     }
 }
 </script>

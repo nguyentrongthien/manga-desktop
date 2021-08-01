@@ -2,9 +2,9 @@
     <v-app id="inspire">
         <v-app id="inspire">
 
-            <Sidebar v-model="drawer" />
+            <Sidebar />
 
-            <Appbar v-model="drawer" />
+            <Appbar />
 
             <v-main>
                 <v-fade-transition mode="out-in">
@@ -32,14 +32,7 @@ export default {
         Sidebar,
         Appbar
     },
-    props: {
-        source: String,
-    },
-    data: () => ({
-        drawer: null,
-    }),
     created () {
-        // this.$vuetify.theme.dark = true
         window.ipcRenderer.receive('from-main', (payload) => {
             if(payload.passThrough) console.log(payload);
             if(payload.passThrough) this.$store.dispatch(payload.passThrough.flag, payload);

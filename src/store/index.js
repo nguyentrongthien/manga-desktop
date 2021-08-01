@@ -36,6 +36,7 @@ const defaults = [
 
 const state = {
     busy: false,
+    drawer: true,
     version: "0.0.1",
     placeholder_img: require('./../plugins/base64_img').default,
     data: {},
@@ -49,6 +50,9 @@ const mutations = {
     },
     setDataProp : (state, args) => {
         Vue.set(state.data, args.key, args.value);
+    },
+    setDrawer : (state, drawer) => {
+        state.drawer = drawer
     }
 };
 const getters = {
@@ -56,6 +60,7 @@ const getters = {
     getDirectory : state => state.data.directory,
     getCache : state => state.data.cache,
     placeholderImg : state => state.placeholder_img,
+    drawer : state => state.drawer,
 };
 const actions = {
     initialize : (context, payload) => {
