@@ -27,6 +27,7 @@ const actions = {
             fn: 'browseSeries', payload: id, passThrough: {flag: 'series/receiveSeries'}
         });
         context.commit('series/setLoading', true, {root: true});
+        context.commit('series/setError', null, {root: true});
     }
 };
 const mutations = {

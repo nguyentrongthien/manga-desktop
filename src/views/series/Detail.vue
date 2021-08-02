@@ -137,6 +137,9 @@ export default {
     created() {
         this.index = this.$route.params.index;
     },
+    beforeDestroy() {
+        this.$store.commit('series/setError', null);
+    },
     methods: {
         read(index) {
             this.$store.dispatch('series/requestChapter', index);

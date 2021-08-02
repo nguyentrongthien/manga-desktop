@@ -8,6 +8,14 @@
                         <h3 v-show="isLoading">Loading...</h3>
                     </v-col>
                 </v-row>
+                <v-row v-if="getError" justify="center">
+                    <v-col cols="12">
+                        <h2 class="text-center red--text">
+                            {{ getError }}
+                        </h2>
+                    </v-col>
+
+                </v-row>
 
                 <v-row justify="center" align="stretch">
                     <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
@@ -56,8 +64,8 @@ export default {
     data: () => ({
 
     }),
-    mounted() {
-
+    beforeDestroy() {
+        this.$store.commit('series/setError', null);
     },
     methods: {
         view(seriesUrl) {
@@ -66,7 +74,7 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('series', ['isLoading']),
+        ...mapGetters('series', ['isLoading', 'getError']),
         series() {
             return this.$store.getters['series/getCurrent'];
         },
