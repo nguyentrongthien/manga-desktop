@@ -1,6 +1,7 @@
 const fs = require('fs');
 let extensions = new Map();
 import downloader from './downloader';
+import validator from "./validator";
 
 export default {
     async initExtensions() {
@@ -16,22 +17,23 @@ export default {
         return this.listSources();
     },
     listSources: () => Array.from(extensions.values()).map(extension => extension.info),
-    browseSeries : (extensionId) => extensions.has(extensionId) ? extensions.get(extensionId).fetch() : null,
+    browseSeries : async (extensionId) => extensions.has(extensionId) ?
+        validator.validateSeriesList(await extensions.get(extensionId).fetch()) : null,
     searchSeriesByKeyword() {
 
     },
-    viewSeries(url) {
+    async viewSeries(url) {
         for(let key of Array.from(extensions.keys())) {
             if(url.includes(key)) {
-                return extensions.get(key).getSeriesInfo(url);
+                return validator.validateSeries(await extensions.get(key).getSeriesInfo(url));
             }
         }
         throw('Extension for ' + url + ' could not be found');
     },
-    viewChapter(payload) {
+    async viewChapter(payload) {
         for(let key of Array.from(extensions.keys())) {
             if(payload.url.includes(key)) {
-                return extensions.get(key).getChapterImages(payload);
+                return validator.validateChapter(await extensions.get(key).getChapterImages(payload));
             }
         }
         throw('Extension for ' + payload.url + ' could not be found');
