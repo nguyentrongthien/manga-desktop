@@ -25,16 +25,10 @@ const getters = {
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
     isSaving : state => state.saving,
-    selectedSeries : state => (useDummy = false) => {
-        if(state.selected.from === 'current') return state.selected.data ? state.selected.data : (useDummy ? {} : null);
-        else if(state.selected.from === 'local') {
-            return getSeriesByHash(state,  state.selected.hash, 'local');
-        }
-        return useDummy ? {} : null;
-    },
+    selectedSeries : state => (useDummy = false) => getSelectedSeries(state, useDummy),
     getError : state => state.error,
     currentChapter : state => {
-        let series = getSeriesByHash(state, state.selected.hash, 'local');
+        let series = getSelectedSeries(state, true);
         return series.chapters[series.reading];
     },
     getSeriesFromLocalByHash : state => (hash) => {
@@ -67,10 +61,13 @@ const actions = {
         )
     },
     receiveSeries : (context, payload) => {
-        if (payload.hasOwnProperty.call(payload, 'result')) {
-            context.commit('setCurrent', payload.result);
-            context.commit('setLoading', false);
-        }
+        handleReply(context, payload,
+            () => {
+                context.commit('setCurrent', payload.result);
+            },
+            () => {context.commit('setError', payload.error);}
+        );
+        context.commit('setLoading', false);
     },
     requestDetail : (context, url) => {
         context.commit('setLoading');
@@ -171,6 +168,18 @@ const actions = {
             },
             () => {context.commit('setError', payload.error);}
         )
+    },
+    writeSeriesInfoToDisk : (context, hash) => {
+        let series = context.getters['getSeriesFromLocalByHash'](hash);
+        if(series)
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'writeData',
+                payload: {
+                    path: context.rootGetters['getDirectory'] + '/' + hash,
+                    file: '/' + fileName,
+                    data: series,
+                }
+            });
     }
 };
 
@@ -196,11 +205,15 @@ const mutations = {
         state.error = error;
     },
     setCurrentChapter : (state, chapter) => {
-        let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
-        series.reading = chapter >= 0 && chapter < series.chapters.length ? chapter : 0;
+        if(state.selected.from === 'current')
+            state.selected.data.reading = chapter >= 0 && chapter < state.selected.data.chapters.length ? chapter : 0;
+        else {
+            let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
+            series.reading = chapter >= 0 && chapter < series.chapters.length ? chapter : 0;
+        }
     },
     setImagesOfCurrentChapter : (state, images) => {
-        let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
+        let series = getSelectedSeries(state);
         series.chapters[series.reading].images.splice(0);
         series.chapters[series.reading].images = images;
     },
@@ -222,12 +235,17 @@ const mutations = {
     }
 };
 
-function getSeriesByHash(state, hash, from) {
-    for (let series of state[from]) {
-        if(series.hash.toString() === hash.toString())
-            return series;
+function getSelectedSeries(state, useDummy = false) {
+    if(state.selected.from === 'current') return state.selected.data ? state.selected.data : (useDummy ? {} : null);
+    else if(state.selected.from === 'local') {
+        return getSeriesByHash(state,  state.selected.hash, 'local');
     }
-    return null;
+    return useDummy ? {} : null;
+}
+
+function getSeriesByHash(state, hash, from) {
+    let index = state[from].findIndex(series => series.hash.toString() === hash.toString());
+    return index < 0 ? null : state[from][index];
 }
 
 function handleReply(context, payload, succeed, fail) {
