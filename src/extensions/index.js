@@ -15,20 +15,10 @@ export default {
         }
         return this.listSources();
     },
-    listSources() {
-        let arr = [];
-        extensions.forEach((value) => {
-            arr.push(value.info);
-        });
-        return arr;
-    },
-    search() {
+    listSources: () => Array.from(extensions.values()).map(extension => extension.info),
+    browseSeries : (extensionId) => extensions.has(extensionId) ? extensions.get(extensionId).fetch() : null,
+    searchSeriesByKeyword() {
 
-    },
-    browseSeries(extensionId) {
-        if(extensions.has(extensionId))
-            return extensions.get(extensionId).fetch();
-        else return null;
     },
     viewSeries(url) {
         for(let key of Array.from(extensions.keys())) {
