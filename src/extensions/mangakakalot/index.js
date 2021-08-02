@@ -17,12 +17,12 @@ const expObj = {
     },
     getSeriesInfo(url) {
         if(isUrlValid(url)) {
-            return getInfo(url);
+            return getSeriesInfo(url);
         } else return null;
     },
     getChapterImages(payload) {
         if(isUrlValid(payload.url)) {
-            return getPages(payload);
+            return getChapterImages(payload);
         } else return null;
     },
 }
@@ -51,7 +51,7 @@ async function getSeries() {
     } catch (e) { console.log(e); }
 }
 
-async function getInfo(url) {
+async function getSeriesInfo(url) {
     try {
         let obj = {};
         let resp = await axiosGet(url);
@@ -116,13 +116,15 @@ async function getInfo(url) {
     } catch (e) { console.log(e); }
 }
 
-async function getPages(payload) {
+async function getChapterImages(payload) {
     try {
         let resp = await axiosGet(payload.url);
         let $ = cheerio.load(resp.data);
         let promises = [];
+        let imageUrls = [];
         await $('.container-chapter-reader > img').each(async (index, element) => {
             let url = $(element).attr('src');
+            imageUrls.push(url);
             promises.push(downloader(
                 url,
                 index.toString().padStart(5, '0'),
@@ -132,10 +134,13 @@ async function getPages(payload) {
             ));
         })
         let results = await Promise.allSettled(promises);
-        return results.map(result => {
-            if(result.status === 'fulfilled')
-                return result.value;
-        });
+        return {
+            imageUrls,
+            localImages: results.map(result => {
+                if(result.status === 'fulfilled')
+                    return result.value;
+            })
+        };
     } catch (e) { console.log(e); }
 }
 

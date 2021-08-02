@@ -8,11 +8,6 @@
                             {{ getError }}
                         </h2>
                     </v-col>
-                    <v-col class="shrink">
-                        <v-btn outlined color="grey" @click.stop="$router.back()">
-                            <v-icon>mdi-arrow-left</v-icon> back
-                        </v-btn>
-                    </v-col>
 
                 </v-row>
                 <v-row justify="center" align="start">
@@ -64,18 +59,28 @@
                                         <v-icon>mdi-arrow-left</v-icon> back
                                     </v-btn>
                                     <v-spacer></v-spacer>
-                                    <v-btn icon class="mx-2"><v-icon>mdi-share</v-icon></v-btn>
-                                    <v-btn v-if="getSeriesFromLocalByHash(selectedSeries.hash)"
-                                           icon class="mx-2" color="green">
-                                        <v-icon>mdi-bookmark-check-outline</v-icon>
-                                    </v-btn>
-                                    <v-btn v-else icon class="mx-2" color="red"
-                                           title="Add to library" :loading="isSaving" @click="saveSeries">
-                                        <v-icon>mdi-bookmark-plus-outline</v-icon>
-                                    </v-btn>
-                                    <v-btn color="red" outlined @click.stop="readFirstChapter">
-                                        start reading <v-icon>mdi-play</v-icon>
-                                    </v-btn>
+                                    <template v-if="selectedSeries.hash">
+                                        <v-btn v-if="getSeriesFromLocalByHash(selectedSeries.hash)"
+                                               icon class="mx-2" color="green">
+                                            <v-icon>mdi-bookmark-check-outline</v-icon>
+                                        </v-btn>
+                                        <v-btn v-else icon class="mx-2" color="red"
+                                               title="Add to library" :loading="isSaving" @click="saveSeries">
+                                            <v-icon>mdi-bookmark-plus-outline</v-icon>
+                                        </v-btn>
+                                        <v-btn color="red" outlined @click.stop="readFirstChapter">
+                                            start reading <v-icon>mdi-play</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <template v-else>
+                                        <v-btn icon class="mx-2" color="red"
+                                               title="Add to library" disabled>
+                                            <v-icon>mdi-bookmark-plus-outline</v-icon>
+                                        </v-btn>
+                                        <v-btn color="red" outlined disabled>
+                                            start reading <v-icon>mdi-play</v-icon>
+                                        </v-btn>
+                                    </template>
                                 </v-row>
                             </v-card-text>
 
@@ -87,7 +92,7 @@
                                 height="600"
                                 item-height="64"
                             >
-                                <template v-slot:default="{ item }">
+                                <template v-slot:default="{ index, item }">
                                     <v-list-item :key="item.hash">
                                         <v-list-item-content>
                                             <v-list-item-title>
@@ -148,12 +153,17 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('series', ['isLoading', 'selectedSeries', 'getError', 'getSeriesFromLocalByHash', 'isSaving']),
+        ...mapGetters('series', ['isLoading', 'getError', 'getSeriesFromLocalByHash', 'isSaving']),
         authors() {
             return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : '';
         },
         genres() {
             return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : '';
+        },
+        selectedSeries() {
+            let series = this.$store.getters['series/selectedSeries'](true);
+            console.log(series);
+            return series;
         }
     }
 }

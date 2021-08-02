@@ -4,14 +4,20 @@ const fileName = '.md_series';
 
 const state = {
     series: [],
-    local: [],
-    current: [],
+    local: [], // Locally saved series
+    current: [], // Currently loaded series
+    pages: [], // Currently loaded pages of a single chapter
     scanning: false,
     loading: false,
     saving: false,
-    selected: {},
+    selected: { // A single selected series either from local or current
+        data: null,
+        from: 'current',
+        hash: null,
+    },
     error: null,
 };
+
 const getters = {
     get : state => state.series,
     getCurrent : state => state.current,
@@ -19,18 +25,24 @@ const getters = {
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
     isSaving : state => state.saving,
-    selectedSeries : state => state.selected,
-    getError : state => state.error,
-    currentChapter : state => state.selected.chapters[state.selected.reading],
-    getSeriesFromLocalByHash : state => (hash, returnObject = false) => {
-        for (let series of state.local) {
-            if(series.hash.toString() === hash.toString())
-                return returnObject ? series : true;
+    selectedSeries : state => (useDummy = false) => {
+        if(state.selected.from === 'current') return state.selected.data ? state.selected.data : (useDummy ? {} : null);
+        else if(state.selected.from === 'local') {
+            return getSeriesByHash(state,  state.selected.hash, 'local');
         }
-
-        return null;
-    }
+        return useDummy ? {} : null;
+    },
+    getError : state => state.error,
+    currentChapter : state => {
+        let series = getSeriesByHash(state, state.selected.hash, 'local');
+        return series.chapters[series.reading];
+    },
+    getSeriesFromLocalByHash : state => (hash) => {
+        return getSeriesByHash(state, hash, 'local');
+    },
+    getCurrentPages : state => state.pages,
 };
+
 const actions = {
     init : (context) => {
         context.commit('setScanning');
@@ -67,16 +79,18 @@ const actions = {
         // Check if this series is available on local
         let series = context.getters['getSeriesFromLocalByHash'](getHashFromString(url), true);
         if(series) {
-            context.commit('setSelectedSeries', series);
+            context.commit('setSelectedSeries', {data: series, from: 'local', hash: series.hash});
             context.commit('setLoading', false);
-        } else
+        } else {
+            context.commit('setSelectedSeries', {data: null, from: 'current', hash: null});
             window.ipcRenderer.send('from-renderer', {
                 fn: 'viewSeries', payload: url, passThrough: {flag: 'series/receiveDetail'}
             });
+        }
     },
     receiveDetail : (context, payload) => {
         handleReply(context, payload,
-            () => {context.commit('setSelectedSeries', payload.result);},
+            () => {context.commit('setSelectedSeries', {data: payload.result, from: 'current', hash: payload.result.hash});},
             () => {context.commit('setError', payload.error);}
         )
         context.commit('setLoading', false);
@@ -98,9 +112,12 @@ const actions = {
         });
     },
     receiveChapter : (context, payload) => {
+        console.log('chapters received');
+        console.log(payload);
         handleReply(context, payload,
             () => {
-                context.commit('setImagesOfCurrentChapter', payload.result)
+                context.commit('setImagesOfCurrentChapter', payload.result.imageUrls)
+                context.commit('setCachedImages', payload.result.localImages)
             },
             () => {context.commit('setError', payload.error);}
         )
@@ -108,7 +125,7 @@ const actions = {
     },
     saveSelectedSeriesToDisk : (context) => {
         context.commit('setSaving');
-        context.state.selected.isSaved = true;
+        context.state.selected.data.isSaved = true;
         window.ipcRenderer.send('from-renderer', {
             fn: 'writeData',
             payload: {
@@ -170,19 +187,27 @@ const mutations = {
     setCurrent : (state, series) => {
         state.current = series;
     },
-    setSelectedSeries : (state, detail) => {
-        state.selected = detail;
+    setSelectedSeries : (state, payload) => {
+        state.selected.data = payload.data;
+        state.selected.from = payload.from;
+        state.selected.hash = payload.hash;
     },
     setError : (state, error = null) => {
         state.error = error;
     },
     setCurrentChapter : (state, chapter) => {
-        state.selected.reading = chapter >= 0 && chapter < state.selected.chapters.length ? chapter : 0;
+        let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
+        series.reading = chapter >= 0 && chapter < series.chapters.length ? chapter : 0;
     },
     setImagesOfCurrentChapter : (state, images) => {
+        let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
+        series.chapters[series.reading].images.splice(0);
+        series.chapters[series.reading].images = images;
+    },
+    setCachedImages : (state, images) => {
         let rnd = randomString(10);
-        state.selected.chapters[state.selected.reading].images.splice(0);
-        state.selected.chapters[state.selected.reading].images = images.map(file => file + '?rnd=' + rnd);
+        state.pages.splice(0);
+        state.pages = images.map(file => file + '?rnd=' + rnd);
     },
     addSeriesToLocal : (state, series) => {
         state.local.push(series);
@@ -196,6 +221,14 @@ const mutations = {
         }
     }
 };
+
+function getSeriesByHash(state, hash, from) {
+    for (let series of state[from]) {
+        if(series.hash.toString() === hash.toString())
+            return series;
+    }
+    return null;
+}
 
 function handleReply(context, payload, succeed, fail) {
     if (payload.hasOwnProperty.call(payload, 'result'))
