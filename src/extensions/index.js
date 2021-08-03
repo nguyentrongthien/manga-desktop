@@ -38,8 +38,8 @@ export default {
         }
         throw('Extension for ' + payload.url + ' could not be found');
     },
-    async downloadFile(payload) {
-        return await downloader(
+    downloadFile(payload) {
+        return downloader(
             payload.url,
             payload.fileName,
             payload.outputPath
