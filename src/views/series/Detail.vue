@@ -164,9 +164,8 @@ export default {
             return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : '';
         },
         selectedSeries() {
-            let series = this.$store.getters['series/selectedSeries'](true);
-            console.log(series);
-            return series;
+            let series = this.$store.getters['series/selectedSeries'];
+            return series ? series : {};
         }
     }
 }

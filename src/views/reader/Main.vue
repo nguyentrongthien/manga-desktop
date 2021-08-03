@@ -121,7 +121,8 @@ export default {
     computed: {
         ...mapGetters('series', ['isLoading', 'getCurrentPages', 'getError']),
         selectedSeries() {
-            return this.$store.getters['series/selectedSeries'](true);
+            let series = this.$store.getters['series/selectedSeries'];
+            return series ? series : {};
         },
         chapters() {
             return this.selectedSeries.chapters ?

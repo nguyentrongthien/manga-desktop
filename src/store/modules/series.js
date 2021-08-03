@@ -25,7 +25,7 @@ const getters = {
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
     isSaving : state => state.saving,
-    selectedSeries : state => (useDummy = false) => getSelectedSeries(state, useDummy),
+    selectedSeries : state => getSelectedSeries(state),
     getError : state => state.error,
     currentChapter : state => {
         let series = getSelectedSeries(state, true);
@@ -109,8 +109,6 @@ const actions = {
         });
     },
     receiveChapter : (context, payload) => {
-        console.log('chapters received');
-        console.log(payload);
         handleReply(context, payload,
             () => {
                 context.commit('setImagesOfCurrentChapter', payload.result.imageUrls)
