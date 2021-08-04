@@ -37,6 +37,7 @@ function download(fileUrl, referer, outputLocationPath) {
 }
 
 export default function (fileUrl, fileName, targetLocation, referer, keepExtension = true){
+    if(!fs.existsSync(targetLocation)) fs.mkdirSync(targetLocation, {recursive: true});
     let tmp = fileUrl.split('.');
     let extension = keepExtension ? '.' + tmp[tmp.length - 1] : '';
     let path = targetLocation + '/' + fileName + extension;
