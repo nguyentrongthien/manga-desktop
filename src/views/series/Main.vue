@@ -69,14 +69,14 @@ export default {
     },
     methods: {
         view(seriesUrl) {
-            this.$store.dispatch('series/requestDetail', seriesUrl);
+            this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
             this.$router.push({path: '/series/detail'})
         }
     },
     computed: {
         ...mapGetters('series', ['isLoading', 'getError']),
         series() {
-            return this.$store.getters['series/getCurrent'];
+            return this.$store.getters['series/webSeries'];
         },
     }
 }

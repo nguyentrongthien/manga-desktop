@@ -1,12 +1,12 @@
 import {createHash} from "crypto";
 
-const fileName = '.md_series';
+const seriesDataFileName = '.md_series';
 const chapterDataFileName = '.md_chapter';
 
 const state = {
     series: [],
-    local: [], // Locally saved series
-    current: [], // Currently loaded series
+    localSeries: [], // Locally saved series
+    webSeries: [], // Currently loaded series
     pages: [], // Currently loaded pages of a single chapter
     scanning: false,
     loading: false,
@@ -17,265 +17,256 @@ const state = {
         hash: null,
     },
     error: null,
+    processingSeries: [],
+    processingChapters: [],
+    selectedSeries: {},
 };
 
 const getters = {
-    get : state => state.series,
-    getCurrent : state => state.current,
-    getLocal : state => state.local,
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
     isSaving : state => state.saving,
-    selectedSeries : state => getSelectedSeries(state),
-    getError : state => state.error,
-    currentChapter : state => {
-        let series = getSelectedSeries(state, true);
-        return series.chapters[series.reading];
+    selectedSeries : state => state.selectedSeries,
+    localSeries : state => state.localSeries,
+    webSeries : state => state.webSeries,
+    isSeriesBeingProcessed : state => urlOrHash => {
+        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        let index = state.processingSeries.findIndex(hash => hash === urlOrHash);
+        return index < 0;
     },
-    getSeriesFromLocalByHash : state => (hash) => {
-        return getSeriesByHash(state, hash, 'local');
+    isChapterBeingProcessed : state => urlOrHash => {
+        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        let index = state.processingChapters.findIndex(hash => hash === urlOrHash);
+        return index >= 0;
     },
     getCurrentPages : state => state.pages,
-};
-
-const actions = {
-    init : (context) => {
-        context.commit('setScanning');
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'scanDir',
-            payload: {
-                path: context.rootGetters['getDirectory'],
-                fileName: fileName,
-            },
-            passThrough: {flag: 'series/initComplete'}
-        });
-    },
-    initComplete : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                payload.result.forEach(series => {
-                    context.commit('addSeriesToLocal', series);
-                })
-                context.commit('setScanning', false);
-            },
-            () => {context.commit('setError', payload.error);}
-        )
-    },
-    receiveSeries : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                context.commit('setCurrent', payload.result);
-            },
-            () => {context.commit('setError', payload.error);}
-        );
-        context.commit('setLoading', false);
-    },
-    requestDetail : (context, url) => {
-        context.commit('setLoading');
-        context.commit('setError');
-
-        // Check if this series is available on local
-        let series = context.getters['getSeriesFromLocalByHash'](getHashFromString(url), true);
-        if(series) {
-            context.commit('setSelectedSeries', {data: series, from: 'local', hash: series.hash});
-            context.commit('setLoading', false);
-        } else {
-            context.commit('setSelectedSeries', {data: null, from: 'current', hash: null});
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'viewSeries', payload: url, passThrough: {flag: 'series/receiveDetail'}
-            });
-        }
-    },
-    receiveDetail : (context, payload) => {
-        handleReply(context, payload,
-            () => {context.commit('setSelectedSeries', {data: payload.result, from: 'current', hash: payload.result.hash});},
-            () => {context.commit('setError', payload.error);}
-        )
-        context.commit('setLoading', false);
-    },
-    requestChapter : (context, index) => {
-        context.commit('setLoading');
-        context.commit('setError');
-        context.commit('setCurrentChapter', index);
-        if(context.getters['currentChapter'].isDownloaded)
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
-                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
-                    getHashFromString(context.getters['currentChapter'].url) + '/' + chapterDataFileName,
-                passThrough: {flag: 'series/receiveChapter'}
-            });
-        else
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'viewChapter',
-                payload: {
-                    url: context.getters['currentChapter'].url,
-                    outputPath: context.rootGetters['getCache']
-                },
-                passThrough: {flag: 'series/receiveChapter',}
-            });
-    },
-    receiveChapter : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                context.commit('setImagesOfCurrentChapter', payload.result.imageUrls)
-                context.commit('setCachedImages', payload.result.localImages)
-            },
-            () => {context.commit('setError', payload.error);}
-        )
-        context.commit('setLoading', false);
-    },
-    saveSelectedSeriesToDisk : (context, chapterUrl = null) => {
-        context.commit('setSaving');
-        context.state.selected.data.isSaved = true;
-        context.state.selected.data.imgUrl = context.getters['selectedSeries'].img;
-        context.state.selected.data.img = ''
-        if(chapterUrl) context.dispatch('series/downloadChapter', chapterUrl).then();
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'writeData',
-            payload: {
-                path: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
-                file: '/' + fileName,
-                data: context.getters['selectedSeries'],
-            },
-            passThrough: {
-                flag: 'series/saveSelectedSeriesComplete',
-                seriesInfo: context.getters['selectedSeries']
-            }
-        });
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'downloadFile',
-            payload: {
-                url: context.getters['selectedSeries'].img,
-                fileName: 'cover',
-                outputPath: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
-            },
-            passThrough: {
-                flag: 'series/coverDownloaded',
-                hash: context.getters['selectedSeries'].hash
-            }
-        });
-    },
-    saveSelectedSeriesComplete : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                context.commit('addSeriesToLocal', payload.passThrough.seriesInfo)
-            },
-            () => {context.commit('setError', payload.error);}
-        )
-        context.commit('setSaving', false);
-    },
-    coverDownloaded : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                context.commit('updateLocalSeriesByHash', {
-                    hash: payload.passThrough.hash,
-                    key: 'img',
-                    value: payload.result
-                })
-            },
-            () => {context.commit('setError', payload.error);}
-        )
-    },
-    downloadChapter : (context, chapterUrl) => {
-        let index = context.getters['selectedSeries'].chapters
-            .findIndex(chapter => chapter.hash.toString() === getHashFromString(chapterUrl));
-        if (index < 0) throw 'Chapter with url ' + chapterUrl + ' could not be found';
-        context.getters['selectedSeries'].chapters[index].isDownloaded = true;
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'viewChapter',
-            payload: {
-                url: chapterUrl,
-                outputPath: context.rootGetters['getDirectory'] + '/' +
-                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
-                    getHashFromString(chapterUrl)
-            },
-            passThrough: {
-                flag: 'series/chapterDownloaded',
-                chapterFilePath: context.rootGetters['getDirectory'] + '/' +
-                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
-                    getHashFromString(chapterUrl)
-            }
-        });
-    },
-    chapterDownloaded : (context, payload) => {
-        handleReply(context, payload,
-            () => {
-                window.ipcRenderer.send('from-renderer', {
-                    fn: 'writeData',
-                    payload: {
-                        path: payload.passThrough.chapterFilePath,
-                        file: '/' + chapterDataFileName,
-                        data: payload.result,
-                    },
-                });
-            },
-            () => {context.commit('setError', payload.error);}
-        )
-        context.commit('setLoading', false);
-    },
-};
+    getError : state => state.error,
+}
 
 const mutations = {
-    setScanning : (state, isScanning = true) => {
-        state.scanning = isScanning;
+    setScanning : (state, isScanning = true) => {state.scanning = isScanning;},
+    setLoading : (state, isLoading = true) => {state.loading = isLoading;},
+    setSaving : (state, isSaving = true) => {state.saving = isSaving;},
+    setWebSeries : (state, webSeries) => {state.webSeries = webSeries},
+    addSeriesToLocalList : (state, newSeries) => {
+        let index = state.localSeries.findIndex(series => series.hash.toString() === newSeries.hash.toString());
+        if(index < 0) state.localSeries.push(newSeries);
+        else state.localSeries[index] = newSeries;
     },
-    setLoading : (state, isLoading = true) => {
-        state.loading = isLoading;
+    removeAllSeriesFromLocalList : state => {state.localSeries.splice(0);},
+    setSelectedSeries : (state, seriesData) => {state.selectedSeries = seriesData;},
+    setSelectedSeriesCurrentChapter : (state, index) => {state.selectedSeries.reading = index;},
+    setChapterInProcessingList : (state, url) => {
+        let hash = getHashFromString(url);
+        if(state.processingChapters.findIndex(item => item === hash) < 0)
+            state.processingChapters.push(hash);
     },
-    setSaving : (state, isSaving = true) => {
-        state.saving = isSaving;
-    },
-    setCurrent : (state, series) => {
-        state.current = series;
-    },
-    setSelectedSeries : (state, payload) => {
-        state.selected.data = payload.data;
-        state.selected.from = payload.from;
-        state.selected.hash = payload.hash;
-    },
-    setError : (state, error = null) => {
-        state.error = error;
-    },
-    setCurrentChapter : (state, chapter) => {
-        if(state.selected.from === 'current')
-            state.selected.data.reading = chapter >= 0 && chapter < state.selected.data.chapters.length ? chapter : 0;
-        else {
-            let series = getSeriesByHash(state, state.selected.hash, state.selected.from);
-            series.reading = chapter >= 0 && chapter < series.chapters.length ? chapter : 0;
-        }
-    },
-    setImagesOfCurrentChapter : (state, images) => {
-        let series = getSelectedSeries(state);
-        series.chapters[series.reading].images.splice(0);
-        series.chapters[series.reading].images = images;
+    removeChapterFromProcessingList : (state, url) => {
+        let index = state.processingChapters.findIndex(item => item === getHashFromString(url));
+        if(index >= 0) state.processingChapters.splice(index, 1);
     },
     setCachedImages : (state, images) => {
         let rnd = randomString(10);
         state.pages.splice(0);
         state.pages = images.map(file => file + '?rnd=' + rnd);
     },
-    addSeriesToLocal : (state, newSeries) => {
-        let index = state['local'].findIndex(series => series.hash.toString() === newSeries.hash.toString());
-        if(index < 0) state.local.push(newSeries);
-        else state.local[index] = newSeries;
-    },
-    updateLocalSeriesByHash : (state, payload) => {
-        let series = getSeriesByHash(state, payload.hash, 'local')
-        if(series) series[payload.key] = payload.value;
-    }
-};
-
-function getSelectedSeries(state, useDummy = false) {
-    if(state.selected.from === 'current') return state.selected.data ? state.selected.data : (useDummy ? {} : null);
-    else if(state.selected.from === 'local') {
-        return getSeriesByHash(state,  state.selected.hash, 'local');
-    }
-    return useDummy ? {} : null;
+    setError : (state, error = null) => {state.error = error;},
 }
 
-function getSeriesByHash(state, hash, from) {
-    let index = state[from].findIndex(series => series.hash.toString() === hash.toString());
-    return index < 0 ? null : state[from][index];
+const actions = {
+    init : (context) => {
+        context.commit('setScanning');
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'scanDir',
+            payload: {path: context.rootGetters['getDirectory'], fileName: seriesDataFileName},
+            passThrough: {flag: 'series/initComplete'}
+        });
+    },
+    initComplete : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                context.commit('removeAllSeriesFromLocalList');
+                payload.result.forEach(series => {context.commit('addSeriesToLocalList', series);});
+                context.commit('setScanning', false);
+            }, () => {context.commit('setError', payload.error);context.commit('setScanning', false);}
+        )
+    },
+    receiveSeries : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                context.commit('setWebSeries', payload.result);
+            }, () => {context.commit('setError', payload.error);}
+        );
+        context.commit('setLoading', false);
+    },
+    requestSeriesDetail : (context, url) => {
+        context.commit('setLoading');
+        context.commit('setError');
+
+        // Attempt to load series data from local file
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
+                getHashFromString(url) + '/' + seriesDataFileName,
+            passThrough: {flag: 'series/receiveSeriesDetail', url: url, hash: getHashFromString(url)}
+        });
+    },
+    receiveSeriesDetail : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                context.commit('setSelectedSeries', payload.result);
+                context.commit('setLoading', false);
+            }, () => {
+                if(payload.error.includes('no such file or directory') &&
+                    payload.error.includes(payload.passThrough.hash)) { // This means series isn't available locally
+                    window.ipcRenderer.send('from-renderer', { // Request it from the remote host
+                        fn: 'viewSeries', payload: payload.passThrough.url, passThrough: {flag: 'series/receiveSeriesDetail'}
+                    });
+                } else context.commit('setError', payload.error);
+            }
+        );
+    },
+    requestChapterDetail : (context, index) => { // Requesting chapter's details of the currently selected series
+        context.commit('setLoading');
+        context.commit('setError');
+        context.commit('setSelectedSeriesCurrentChapter', index);
+        writeSelectedSeriesLocalData(context);
+        let selectedChapter = context.getters['selectedSeries'].chapters[index];
+        context.commit('setChapterInProcessingList', selectedChapter.url);
+        if(context.getters['selectedSeries'].isSaved && selectedChapter.isDownloaded) {
+            // the series is saved and chapter is downloaded, we attempt to load chapter from local
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
+                    getHashFromString(selectedChapter.url) + '/' + chapterDataFileName,
+                passThrough: {flag: 'series/receiveChapterDetail', url: selectedChapter.url, hash: selectedChapter.hash,
+                    updateCachedImages: true}
+            });
+        } else { // Otherwise, we request it to cache directory
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'viewChapter',
+                payload: {
+                    url: selectedChapter.url,
+                    outputPath: context.rootGetters['getCache']
+                },
+                passThrough: {flag: 'series/receiveChapterDetail', url: selectedChapter.url,
+                    updateCachedImages: true}
+            });
+
+        }
+    },
+    receiveChapterDetail : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                context.commit('removeChapterFromProcessingList', payload.passThrough.url);
+                if(payload.passThrough.updateCachedImages) {
+                    // context.commit('setImagesOfCurrentChapter', payload.result.imageUrls)
+                    context.commit('setCachedImages', payload.result.localImages)
+                }
+
+                if(payload.passThrough.writeDataFile) // writeDataFile flag is set, write chapter data to local
+                    window.ipcRenderer.send('from-renderer', {
+                        fn: 'writeData',
+                        payload: {
+                            path: payload.passThrough.chapterFilePath,
+                            file: '/' + chapterDataFileName,
+                            data: payload.result,
+                        },
+                    });
+            }, () => {
+                // This error was caused by attempting to load chapter after isDownloaded flag was checked.
+                // Likely corrupted or missing data file, we re-download the chapter and rewrite data file.
+                if(payload.error.includes('no such file or directory') &&
+                    payload.error.includes(payload.passThrough.hash)) {
+                    window.ipcRenderer.send('from-renderer', {
+                        fn: 'viewChapter',
+                        payload: {
+                            url: payload.passThrough.url,
+                            outputPath: context.rootGetters['getDirectory'] + '/' +
+                                getHashFromString(context.getters['selectedSeries'].url) + '/' + payload.passThrough.hash
+                        },
+                        passThrough: {
+                            flag: 'series/receiveChapterDetail',
+                            chapterFilePath: context.rootGetters['getDirectory'] + '/' +
+                                getHashFromString(context.getters['selectedSeries'].url) + '/' + payload.passThrough.hash,
+                            writeDataFile: true,
+                            updateCachedImages: true,
+                            url: payload.passThrough.url
+                        }
+                    });
+                } else context.commit('setError', payload.error);
+            }
+        );
+        context.commit('setLoading', false);
+    },
+    saveSelectedSeriesToLocal : (context, payload) => {
+        context.commit('setSaving');
+        if(!payload) { // First we download the cover image
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'downloadFile',
+                payload: {
+                    url: context.getters['selectedSeries'].img,
+                    fileName: 'cover',
+                    outputPath: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
+                },
+                passThrough: {
+                    flag: 'series/saveSelectedSeriesToLocal',
+                    hash: context.getters['selectedSeries'].hash,
+                    coverDownloaded: true
+                }
+            });
+        } else { // Then we write the series data to local
+            if(payload.passThrough.coverDownloaded)
+                handleReply(context, payload,
+                    () => {
+                        if(payload.passThrough.hash === context.getters['selectedSeries'].hash) {
+                            context.state.selectedSeries.isSaved = true;
+                            context.state.selectedSeries.img = payload.result; // local path to cover image
+                            writeSelectedSeriesLocalData(context);
+                        }
+                    }, () => {context.commit('setError', payload.error);}
+                );
+            context.commit('setSaving', false);
+        }
+    },
+    saveChapterOfCurrentSeriesToLocal : (context, chapterUrl) => {
+        let index = context.getters['selectedSeries'].chapters
+            .findIndex(chapter => chapter.hash === getHashFromString(chapterUrl))
+        let selectedChapter = context.getters['selectedSeries'].chapters[index];
+
+        selectedChapter.isDownloaded = true;
+        if(!context.getters['selectedSeries'].isSaved)
+            context.dispatch('saveSelectedSeriesToLocal').then();
+        else writeSelectedSeriesLocalData(context);
+
+        context.commit('setChapterInProcessingList', selectedChapter.url);
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'viewChapter',
+            payload: {
+                url: selectedChapter.url,
+                outputPath: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' + selectedChapter.hash
+            },
+            passThrough: {
+                flag: 'series/receiveChapterDetail',
+                chapterFilePath: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' + selectedChapter.hash,
+                writeDataFile: true,
+                url: selectedChapter.url
+            }
+        });
+    }
+}
+
+function writeSelectedSeriesLocalData(context, passThrough) {
+    window.ipcRenderer.send('from-renderer', {
+        fn: 'writeData',
+        payload: {
+            path: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
+            file: '/' + seriesDataFileName,
+            data: context.getters['selectedSeries'],
+        },
+        passThrough: passThrough
+    });
 }
 
 function handleReply(context, payload, succeed, fail) {

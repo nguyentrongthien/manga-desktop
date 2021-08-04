@@ -7,7 +7,7 @@ export default {
     readData : (filePath) => {
         try {
             return JSON.parse(fs.readFileSync(filePath));
-        } catch(e) { console.log(e); }
+        } catch(e) { console.log(e); throw e.toString(); }
     },
     writeData : (args) => {
         try {

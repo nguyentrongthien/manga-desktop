@@ -102,7 +102,7 @@ export default {
         read(index) {
             if(index >= 0 && index < this.chapters.length) {
                 this.scrollToTop();
-                this.$store.dispatch('series/requestChapter', index);
+                this.$store.dispatch('series/requestChapterDetail', index);
             }
         },
         scrollToTop() {

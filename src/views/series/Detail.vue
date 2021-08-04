@@ -60,7 +60,7 @@
                                     </v-btn>
                                     <v-spacer></v-spacer>
                                     <template v-if="selectedSeries.hash">
-                                        <v-btn v-if="getSeriesFromLocalByHash(selectedSeries.hash)"
+                                        <v-btn v-if="selectedSeries.isSaved"
                                                icon class="mx-2" color="green">
                                             <v-icon>mdi-bookmark-check-outline</v-icon>
                                         </v-btn>
@@ -106,10 +106,12 @@
                                         <v-spacer></v-spacer>
 
                                         <v-list-item-action>
-                                            <v-icon v-if="item.isDownloaded" color="green" small>mdi-check</v-icon>
-                                            <v-btn v-else icon small color="red" @click.stop="download(item.url)" :disabled="isSaving">
+                                            <v-btn v-if="!item.isDownloaded || $store.getters['series/isChapterBeingProcessed'](item.hash)"
+                                                   icon small color="red" @click.stop="download(item.url)"
+                                                :loading="$store.getters['series/isChapterBeingProcessed'](item.hash)">
                                                 <v-icon small>mdi-arrow-collapse-down</v-icon>
                                             </v-btn>
+                                            <v-icon v-else-if="item.isDownloaded" color="green" small>mdi-check</v-icon>
                                         </v-list-item-action>
                                     </v-list-item>
 
@@ -142,21 +144,21 @@ export default {
     },
     methods: {
         read(index) {
-            this.$store.dispatch('series/requestChapter', index);
+            this.$store.dispatch('series/requestChapterDetail', index);
             this.$router.push({path: '/reader'})
         },
         readFirstChapter() {
             this.read(this.selectedSeries.chapters.length - 1);
         },
         download(chapterUrl) {
-            this.$store.dispatch('series/saveSelectedSeriesToDisk', chapterUrl);
+            this.$store.dispatch('series/saveChapterOfCurrentSeriesToLocal', chapterUrl);
         },
         saveSeries() {
-            this.$store.dispatch('series/saveSelectedSeriesToDisk');
+            this.$store.dispatch('series/saveSelectedSeriesToLocal');
         }
     },
     computed: {
-        ...mapGetters('series', ['isLoading', 'getError', 'getSeriesFromLocalByHash', 'isSaving']),
+        ...mapGetters('series', ['isLoading', 'getError', 'isSaving']),
         authors() {
             return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : '';
         },
