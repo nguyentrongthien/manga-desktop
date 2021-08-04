@@ -33,7 +33,7 @@ function isUrlValid(url) {
 
 async function getSeries() {
     try {
-        let resp = await axiosGet(expObj.info.baseUrl + '/manga_list?type=topview&category=all&state=all&page=1');
+        let resp = await axiosGet(expObj.info.baseUrl + '/manga_list');
         let series = [];
         let $ = cheerio.load(resp.data);
         $('.list-truyen-item-wrap').each((index, element) => {
@@ -104,7 +104,7 @@ async function getSeriesInfo(url) {
                 }
                 tmp.isRead = false;
                 tmp.isDownloaded = false;
-                tmp.hash = getHashFromString(url);
+                tmp.hash = getHashFromString(tmp.url);
                 tmp.order = index;
                 tmp.images = [];
             })
