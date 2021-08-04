@@ -148,8 +148,8 @@ export default {
         readFirstChapter() {
             this.read(this.selectedSeries.chapters.length - 1);
         },
-        download() {
-
+        download(chapterUrl) {
+            this.$store.dispatch('series/saveSelectedSeriesToDisk', chapterUrl);
         },
         saveSeries() {
             this.$store.dispatch('series/saveSelectedSeriesToDisk');

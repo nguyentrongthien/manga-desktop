@@ -1,6 +1,7 @@
 import {createHash} from "crypto";
 
 const fileName = '.md_series';
+const chapterDataFileName = '.md_chapter';
 
 const state = {
     series: [],
@@ -96,17 +97,22 @@ const actions = {
         context.commit('setLoading');
         context.commit('setError');
         context.commit('setCurrentChapter', index);
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'viewChapter',
-            payload: {
-                url: context.getters['currentChapter'].url,
-                outputPath: context.rootGetters['getCache']
-            },
-            passThrough: {
-                flag: 'series/receiveChapter',
-                index: index
-            }
-        });
+        if(context.getters['currentChapter'].isDownloaded)
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
+                    getHashFromString(context.getters['currentChapter'].url) + '/' + chapterDataFileName,
+                passThrough: {flag: 'series/receiveChapter'}
+            });
+        else
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'viewChapter',
+                payload: {
+                    url: context.getters['currentChapter'].url,
+                    outputPath: context.rootGetters['getCache']
+                },
+                passThrough: {flag: 'series/receiveChapter',}
+            });
     },
     receiveChapter : (context, payload) => {
         handleReply(context, payload,
@@ -118,9 +124,12 @@ const actions = {
         )
         context.commit('setLoading', false);
     },
-    saveSelectedSeriesToDisk : (context) => {
+    saveSelectedSeriesToDisk : (context, chapterUrl = null) => {
         context.commit('setSaving');
         context.state.selected.data.isSaved = true;
+        context.state.selected.data.imgUrl = context.getters['selectedSeries'].img;
+        context.state.selected.data.img = ''
+        if(chapterUrl) context.dispatch('series/downloadChapter', chapterUrl).then();
         window.ipcRenderer.send('from-renderer', {
             fn: 'writeData',
             payload: {
@@ -167,18 +176,43 @@ const actions = {
             () => {context.commit('setError', payload.error);}
         )
     },
-    writeSeriesInfoToDisk : (context, hash) => {
-        let series = context.getters['getSeriesFromLocalByHash'](hash);
-        if(series)
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'writeData',
-                payload: {
-                    path: context.rootGetters['getDirectory'] + '/' + hash,
-                    file: '/' + fileName,
-                    data: series,
-                }
-            });
-    }
+    downloadChapter : (context, chapterUrl) => {
+        let index = context.getters['selectedSeries'].chapters
+            .findIndex(chapter => chapter.hash.toString() === getHashFromString(chapterUrl));
+        if (index < 0) throw 'Chapter with url ' + chapterUrl + ' could not be found';
+        context.getters['selectedSeries'].chapters[index].isDownloaded = true;
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'viewChapter',
+            payload: {
+                url: chapterUrl,
+                outputPath: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
+                    getHashFromString(chapterUrl)
+            },
+            passThrough: {
+                flag: 'series/chapterDownloaded',
+                chapterFilePath: context.rootGetters['getDirectory'] + '/' +
+                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
+                    getHashFromString(chapterUrl)
+            }
+        });
+    },
+    chapterDownloaded : (context, payload) => {
+        handleReply(context, payload,
+            () => {
+                window.ipcRenderer.send('from-renderer', {
+                    fn: 'writeData',
+                    payload: {
+                        path: payload.passThrough.chapterFilePath,
+                        file: '/' + chapterDataFileName,
+                        data: payload.result,
+                    },
+                });
+            },
+            () => {context.commit('setError', payload.error);}
+        )
+        context.commit('setLoading', false);
+    },
 };
 
 const mutations = {
@@ -220,16 +254,14 @@ const mutations = {
         state.pages.splice(0);
         state.pages = images.map(file => file + '?rnd=' + rnd);
     },
-    addSeriesToLocal : (state, series) => {
-        state.local.push(series);
+    addSeriesToLocal : (state, newSeries) => {
+        let index = state['local'].findIndex(series => series.hash.toString() === newSeries.hash.toString());
+        if(index < 0) state.local.push(newSeries);
+        else state.local[index] = newSeries;
     },
     updateLocalSeriesByHash : (state, payload) => {
-        for (let series of state.local) {
-            if(series.hash.toString() === payload.hash.toString()) {
-                series[payload.key] = payload.value;
-                break;
-            }
-        }
+        let series = getSeriesByHash(state, payload.hash, 'local')
+        if(series) series[payload.key] = payload.value;
     }
 };
 
