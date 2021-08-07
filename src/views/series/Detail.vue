@@ -60,6 +60,10 @@
                                     </v-btn>
                                     <v-spacer></v-spacer>
                                     <template v-if="selectedSeries.hash">
+                                        <v-btn icon class="mx-2" color="red"
+                                               @click.stop="downloadAllChapters" :loading="isDownloadQueueRunning">
+                                            <v-icon>mdi-download</v-icon>
+                                        </v-btn>
                                         <v-btn v-if="selectedSeries.isSaved"
                                                icon class="mx-2" color="green">
                                             <v-icon>mdi-bookmark-check-outline</v-icon>
@@ -155,10 +159,13 @@ export default {
         },
         saveSeries() {
             this.$store.dispatch('series/saveSelectedSeriesToLocal');
+        },
+        downloadAllChapters() {
+            this.$store.dispatch('series/saveAllChaptersOfCurrentSeriesToLocal');
         }
     },
     computed: {
-        ...mapGetters('series', ['isLoading', 'getError', 'isSaving']),
+        ...mapGetters('series', ['isLoading', 'getError', 'isSaving', 'isDownloadQueueRunning']),
         authors() {
             return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : '';
         },
