@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { dialog } = require('electron');
+const { dialog, app } = require('electron');
 import extensions from './../extensions';
 
 export default {
@@ -15,6 +15,7 @@ export default {
             fs.writeFileSync(args.path + '/' + args.file, JSON.stringify(args.data));
         } catch(e) { console.log(e); }
     },
+    getAppPath : () => app.getPath('appData'),
     getDir : async (multiple = false) => {
         return await dialog.showOpenDialog({
             properties: multiple === true ? ['openDirectory', 'multiSelections'] : ['openDirectory']

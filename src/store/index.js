@@ -40,6 +40,7 @@ const state = {
     version: "0.0.1",
     placeholder_img: require('./../plugins/base64_img').default,
     data: {},
+    appPath: null,
 };
 const mutations = {
     setData : (state, payload) => {
@@ -52,7 +53,10 @@ const mutations = {
         Vue.set(state.data, args.key, args.value);
     },
     setDrawer : (state, drawer) => {
-        state.drawer = drawer
+        state.drawer = drawer;
+    },
+    setAppPath : (state, path) => {
+        state.appPath = path;
     }
 };
 const getters = {
@@ -61,14 +65,25 @@ const getters = {
     getCache : state => state.data.cache,
     placeholderImg : state => state.placeholder_img,
     drawer : state => state.drawer,
+    appPath : state => state.appPath,
 };
 const actions = {
-    initialize : (context, payload) => {
-        if(!payload)
+    initialize : () => {
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'getAppPath', payload: null, passThrough: {flag: 'initializeAppPath'}
+        });
+    },
+    initializeAppPath : (context, payload) => {
+        console.log(payload.result);
+        context.commit('setAppPath', payload.result);
+        context.dispatch('readInitialData').then();
+    },
+    readInitialData : (context, payload) => {
+        if(!payload) {
             window.ipcRenderer.send('from-renderer', {
-                fn: 'readData', payload: './' + fileName, passThrough: {flag: 'initialize'}
+                fn: 'readData', payload: context.getters['appPath'] + '/' + fileName, passThrough: {flag: 'readInitialData'}
             });
-        else if (payload.hasOwnProperty.call(payload, 'result')) {
+        } else {
             let res = payload.result;
             if(typeof res === "undefined" || res === null) res = {};
             defaults.forEach(prop => {
@@ -83,7 +98,7 @@ const actions = {
     },
     writeData : (context) => {
         if(context.state.data.version) { // Check if data has already been initialized (might have concurrency issue)
-            writeToDisc({ path: './', file: fileName, data: context.state.data });
+            writeToDisc({ path: context.getters['appPath'] + '/', file: fileName, data: context.state.data });
         }
     },
     selectDirectory : (context, payload) => {
