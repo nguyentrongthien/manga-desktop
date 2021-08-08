@@ -1,6 +1,6 @@
 import axios from "axios";
 import cheerio from "cheerio";
-import downloader from './../downloader';
+import downloader from '../../downloader';
 import { createHash } from 'crypto';
 
 // https://mangakakalot.com/manga_list?type=topview&category=all&state=All&page=1

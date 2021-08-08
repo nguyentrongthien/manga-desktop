@@ -1,19 +1,36 @@
-const fs = require('fs');
+// const fs = require('fs');
 let extensions = new Map();
 import downloader from './downloader';
 import validator from "./validator";
 
+(function updateModules() {
+    // Allow us to dynamically require all Vuex module files.
+    // https://webpack.js.org/guides/dependency-management/#require-context
+    const requireModule = require.context(
+        // Search for files in the modules directory.
+        './modules',
+        // Search for files in subdirectories.
+        true,
+        // Include any index.js file.
+        /^(.)*\/index\.js$/
+    );
+
+    extensions.clear();
+
+    // For every Vuex module...
+    requireModule.keys().forEach(fileName => {
+        console.log('======')
+        console.log(fileName)
+        console.log(requireModule(fileName));
+        const moduleDefinition = requireModule(fileName).default;
+
+        extensions.set(moduleDefinition.info.id, moduleDefinition);
+
+    });
+})();
+
 export default {
-    async initExtensions() {
-        let directories = fs.readdirSync('./src/extensions', { withFileTypes: true });
-        for (const dir of directories) {
-            if(dir.isDirectory()) {
-                try {
-                    let tmp = await import('./' + dir.name);
-                    extensions.set(tmp.default.info.id, tmp.default);
-                } catch (e) { console.log(e); }
-            }
-        }
+    initExtensions() {
         return this.listSources();
     },
     listSources: () => Array.from(extensions.values()).map(extension => extension.info),
