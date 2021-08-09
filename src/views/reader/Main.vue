@@ -91,10 +91,12 @@ export default {
     mounted() {
         this.drawer = this.$store.getters['drawer'];
         this.$store.commit('setDrawer', false);
+        this.$store.commit('setReader');
         window.addEventListener('keydown', this.fireArrowKeyEvent, true);
     },
     beforeDestroy() {
         this.$store.commit('setDrawer', this.drawer);
+        this.$store.commit('setReader', false);
         window.removeEventListener('ke', this.fireArrowKeyEvent, true);
         this.$store.commit('series/setError', null);
     },

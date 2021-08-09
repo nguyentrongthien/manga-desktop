@@ -3,6 +3,7 @@
         app
         clipped-left
         color="grey darken-4"
+        :collapse="isReading"
         dense
     >
         <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>

@@ -37,6 +37,7 @@ const defaults = [
 const state = {
     busy: false,
     drawer: true,
+    reader: false,
     version: "0.0.1",
     placeholder_img: require('./../plugins/base64_img').default,
     data: {},
@@ -57,10 +58,14 @@ const mutations = {
     },
     setAppPath : (state, path) => {
         state.appPath = path;
+    },
+    setReader : (state, reader = true) => {
+        state.reader = reader;
     }
 };
 const getters = {
     isBusy : state => state.busy,
+    isReading : state => state.reader,
     getDirectory : state => state.data.directory,
     getCache : state => state.data.cache,
     placeholderImg : state => state.placeholder_img,
