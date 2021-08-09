@@ -149,7 +149,10 @@ const actions = {
         context.commit('setLoading');
         context.commit('setError');
         context.commit('setSelectedSeriesCurrentChapter', index);
-        writeSelectedSeriesLocalData(context);
+
+        if(context.getters['selectedSeries'].isSaved)
+            writeSelectedSeriesLocalData(context);
+
         let selectedChapter = context.getters['selectedSeries'].chapters[index];
         context.commit('setChapterInProcessingList', selectedChapter.url);
         if(context.getters['selectedSeries'].isSaved && selectedChapter.isDownloaded) {
