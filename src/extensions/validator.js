@@ -33,7 +33,6 @@ let chapterProperties = [
 function validate(targetObject, properties) {
     for (let property of properties)
         if (!targetObject.hasOwnProperty.call(targetObject, property)) {
-            console.log(targetObject);
             throw 'Object is missing property <' + property + '>'
         }
     return targetObject;

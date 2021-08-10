@@ -79,7 +79,6 @@ const actions = {
         });
     },
     initializeAppPath : (context, payload) => {
-        console.log(payload.result);
         context.commit('setAppPath', payload.result);
         context.dispatch('readInitialData').then();
     },
