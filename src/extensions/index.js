@@ -19,9 +19,6 @@ import validator from "./validator";
 
     // For every Vuex module...
     requireModule.keys().forEach(fileName => {
-        console.log('======')
-        console.log(fileName)
-        console.log(requireModule(fileName));
         const moduleDefinition = requireModule(fileName).default;
 
         extensions.set(moduleDefinition.info.id, moduleDefinition);
@@ -34,11 +31,10 @@ export default {
         return this.listSources();
     },
     listSources: () => Array.from(extensions.values()).map(extension => extension.info),
-    browseSeries : async (extensionId) => extensions.has(extensionId) ?
-        validator.validateSeriesList(await extensions.get(extensionId).fetch()) : null,
-    searchSeriesByKeyword() {
-
-    },
+    browseSeries : async (payload) => extensions.has(payload.id) ?
+        validator.validateSeriesList(await extensions.get(payload.id).browseSeries(payload)) : null,
+    searchSeries : async (payload) => extensions.has(payload.id) ?
+        validator.validateSeriesList(await extensions.get(payload.id).searchSeries(payload)) : null,
     async viewSeries(url) {
         for(let key of Array.from(extensions.keys())) {
             if(url.includes(key)) {

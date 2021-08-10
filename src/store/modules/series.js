@@ -50,7 +50,12 @@ const mutations = {
     setScanning : (state, isScanning = true) => {state.scanning = isScanning;},
     setLoading : (state, isLoading = true) => {state.loading = isLoading;},
     setSaving : (state, isSaving = true) => {state.saving = isSaving;},
-    setWebSeries : (state, webSeries) => {state.webSeries = webSeries},
+    setWebSeries : (state, webSeries) => {
+        state.webSeries.splice(0);
+        webSeries.forEach(series => {
+            state.webSeries.push(series);
+        })
+    },
     addSeriesToLocalList : (state, newSeries) => {
         let index = state.localSeries.findIndex(series => series.hash.toString() === newSeries.hash.toString());
         if(index < 0) state.localSeries.push(newSeries);

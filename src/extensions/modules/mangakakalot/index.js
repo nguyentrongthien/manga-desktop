@@ -1,7 +1,5 @@
-import axios from "axios";
-import cheerio from "cheerio";
 import downloader from '../../downloader';
-import { createHash } from 'crypto';
+import helper from "../../helper";
 
 // https://mangakakalot.com/manga_list?type=topview&category=all&state=All&page=1
 
@@ -12,54 +10,77 @@ const expObj = {
         version: '0.0.1',
         baseUrl: 'https://mangakakalot.com',
     },
-    fetch() {
-        return getSeries();
-    },
-    getSeriesInfo(url) {
-        if(isUrlValid(url)) {
-            return getSeriesInfo(url);
-        } else return null;
-    },
-    getChapterImages(payload) {
-        if(isUrlValid(payload.url)) {
-            return getChapterImages(payload);
-        } else return null;
-    },
+    browseSeries : payload => browseSeries(payload),
+    searchSeries : payload => searchSeries(payload),
+    getSeriesInfo : url => isUrlValid(url) ? getSeriesInfo(url) : null,
+    getChapterImages : payload => isUrlValid(payload.url) ? getChapterImages(payload) : null,
 }
 
 function isUrlValid(url) {
     return url.includes(expObj.info.id)
 }
 
-async function getSeries() {
+async function browseSeries(payload) {
     try {
-        let resp = await axiosGet(expObj.info.baseUrl + '/manga_list');
-        let series = [];
-        let $ = cheerio.load(resp.data);
-        $('.list-truyen-item-wrap').each((index, element) => {
-            series.push({
+        let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
+        return $('.list-truyen-item-wrap').map((index, element) => {
+            return {
                 url: $($(element).find('a').get(0)).attr('href'),
                 title: $($(element).find('a').get(0)).attr('title'),
-                img: $($($(element).find('a').get(0)).find('img').get(0)).attr('src'),
+                img: $($(element).find('a > img').get(0)).attr('src'),
                 latestChapter: $($(element).children('.list-story-item-wrap-chapter').get(0)).attr('title'),
                 latestChapterUrl: $($(element).children('.list-story-item-wrap-chapter').get(0)).attr('href'),
                 views: $($(element).find('div > span.aye_icon').get(0)).text(),
                 sourceId: expObj.info.id
-            })
-        });
-        return series;
+            }
+        }).get();
     } catch (e) { console.log(e); }
+}
+
+async function searchSeries(payload) {
+    try {
+        let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
+        return $('div.panel_story_list > div.story_item').map((index, element) => {
+            return {
+                url: $($(element).find('a').get(0)).attr('href'),
+                title: $($(element).find('div.story_item_right > h3.story_name > a').get(0)).text(),
+                img: $($(element).find('a > img').get(0)).attr('src'),
+                latestChapter: $($(element).children('div.story_item_right > em.story_chapter > a').get(0)).attr('title'),
+                latestChapterUrl: $($(element).children('div.story_item_right > em.story_chapter > a').get(0)).attr('href'),
+                views: $($(element).find('div.story_item_right > span').last()).text(),
+                sourceId: expObj.info.id
+            }
+        }).get();
+    } catch (e) { console.log(e); }
+}
+
+function getUrl(payload) {
+    let url = expObj.info.baseUrl;
+    if(!payload || !payload.search)
+        url += '/manga_list';
+
+    if(payload.search)
+        url += '/search/story/' + formatSearchTerm(payload.search);
+
+    if(payload.page)
+        url += '?page=' + payload.page;
+
+    console.log(url);
+    return url;
+}
+
+function formatSearchTerm(search) {
+    return search.replaceAll(/[\s]/gi, '_').replaceAll(/[^0-9a-z\\_]/gi, '');
 }
 
 async function getSeriesInfo(url) {
     try {
         let obj = {};
-        let resp = await axiosGet(url);
-        let $ = cheerio.load(resp.data);
+        let $ = await helper.loadUrl(url, expObj.info.baseUrl);
         let infoEl = $($('.manga-info-text').get(0));
         obj.url = url;
         obj.sourceId = expObj.info.id;
-        obj.hash = getHashFromString(url);
+        obj.hash = helper.getHashFromString(url);
         obj.isSaved = false;
         infoEl.children('li').each((i, el) => {
             if($(el).find('h1').length > 0 && !obj.title) {
@@ -104,7 +125,7 @@ async function getSeriesInfo(url) {
                 }
                 tmp.isRead = false;
                 tmp.isDownloaded = false;
-                tmp.hash = getHashFromString(tmp.url);
+                tmp.hash = helper.getHashFromString(tmp.url);
                 tmp.order = index;
                 tmp.images = [];
             })
@@ -118,8 +139,7 @@ async function getSeriesInfo(url) {
 
 async function getChapterImages(payload) {
     try {
-        let resp = await axiosGet(payload.url);
-        let $ = cheerio.load(resp.data);
+        let $ = await helper.loadUrl(payload.url, expObj.info.baseUrl);
         let promises = [];
         let imageUrls = [];
         await $('.container-chapter-reader > img').each(async (index, element) => {
@@ -142,18 +162,6 @@ async function getChapterImages(payload) {
             })
         };
     } catch (e) { console.log(e); }
-}
-
-async function axiosGet(url) {
-    return await axios.get(url, {
-        headers: {
-            "Referer": expObj.info.baseUrl
-        }
-    });
-}
-
-function getHashFromString(string) {
-    return createHash('sha256').update(string).digest('hex');
 }
 
 export default expObj;
