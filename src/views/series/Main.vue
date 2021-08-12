@@ -74,13 +74,17 @@
                 </v-row>
             </v-col>
         </v-row>
+        <filter-menu />
     </v-container>
 </template>
 
 <script>
 import { mapGetters } from 'vuex';
+import FilterMenu from "./components/FilterMenu";
+
 export default {
     name: "Main",
+    components: { FilterMenu },
     data: () => ({
         search_term: '',
     }),

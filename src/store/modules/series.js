@@ -139,7 +139,6 @@ const actions = {
             () => {
                 context.commit('setSelectedSeries', payload.result);
                 context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
-                context.commit('setLoading', false);
             }, () => {
                 if(payload.error.includes('no such file or directory') &&
                     payload.error.includes(payload.passThrough.hash)) { // This means series isn't available locally
@@ -149,6 +148,7 @@ const actions = {
                 } else context.commit('setError', payload.error);
             }
         );
+        context.commit('setLoading', false);
     },
     requestChapterDetail : (context, index) => { // Requesting chapter's details of the currently selected series
         context.commit('setLoading');
