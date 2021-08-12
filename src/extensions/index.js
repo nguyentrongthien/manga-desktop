@@ -51,6 +51,9 @@ export default {
         }
         throw('Extension for ' + payload.url + ' could not be found');
     },
+    getAvailableFilters(id) {
+        return extensions.get(id).getAvailableFilters();
+    },
     downloadFile(payload) {
         return downloader(
             payload.url,

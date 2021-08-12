@@ -6,12 +6,16 @@ export default {
     async loadUrl(url, referer) {
         let resp = await axios.get(url, {
             headers: {
-                "Referer": referer
+                "Referer": referer ? referer : url
             }
         });
         return cheerio.load(resp.data);
     },
     getHashFromString(string) {
         return createHash('sha256').update(string).digest('hex');
+    },
+    getParams(url, key) {
+        let urlParams = new URLSearchParams(url.substr(url.indexOf('?')));
+        return urlParams.get(key);
     }
 }

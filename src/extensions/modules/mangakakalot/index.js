@@ -1,8 +1,6 @@
 import downloader from '../../downloader';
 import helper from "../../helper";
 
-// https://mangakakalot.com/manga_list?type=topview&category=all&state=All&page=1
-
 const expObj = {
     info: {
         name: 'MangaKakalot',
@@ -14,6 +12,7 @@ const expObj = {
     searchSeries : payload => searchSeries(payload),
     getSeriesInfo : url => isUrlValid(url) ? getSeriesInfo(url) : null,
     getChapterImages : payload => isUrlValid(payload.url) ? getChapterImages(payload) : null,
+    getAvailableFilters : () => getAvailableFilters(),
 }
 
 function isUrlValid(url) {
@@ -54,16 +53,55 @@ async function searchSeries(payload) {
     } catch (e) { console.log(e); }
 }
 
+async function getAvailableFilters() {
+    try {
+        let $ = await helper.loadUrl(expObj.info.baseUrl);
+        let arr = [{
+            name: 'Category',
+            key: 'category',
+            selected: 0,
+            values: []
+        }];
+        $('div.panel-category > table > tbody > tr').each((index, element) => {
+            if(index <= 1) {
+                arr.push({
+                    name: index === 0 ? 'Type' : 'State',
+                    key: index === 0 ? 'type' : 'state',
+                    selected: 0,
+                    values: $(element).find('td > a').map((i, child) => ({
+                        name: $(child).text(),
+                        value: helper.getParams($(child).attr('href'), 'type'),
+                    })).get()
+                });
+            } else {
+                $(element).find('td > a').each((i, child) => {
+                    arr[0].values.push({
+                        name: $(child).text(),
+                        value: helper.getParams($(child).attr('href'), 'category'),
+                    })
+                })
+            }
+        });
+        return arr;
+    } catch (e) { console.log(e); }
+
+}
+
 function getUrl(payload) {
     let url = expObj.info.baseUrl;
-    if(!payload || !payload.search)
-        url += '/manga_list';
+    if(!payload || !payload.search) {
+        url += '/manga_list?';
+        if(payload.filter)
+            for(let item of payload.filter) {
+                url += item.key + '=' + item.values[item.selected].value + '&'
+            }
+    }
 
     if(payload.search)
-        url += '/search/story/' + formatSearchTerm(payload.search);
+        url += '/search/story/' + formatSearchTerm(payload.search) + '?';
 
     if(payload.page)
-        url += '?page=' + payload.page;
+        url += 'page=' + payload.page;
 
     console.log(url);
     return url;
