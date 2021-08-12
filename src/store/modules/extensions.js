@@ -5,8 +5,8 @@ const state = {
     params: {
         search: '',
         page: 1,
-        filter: null,
-    }
+    },
+    filter: null,
 };
 const getters = {
     get : state => state.extensions,
@@ -14,6 +14,7 @@ const getters = {
     currentExtension : state => state.extensions[state.extensions.findIndex(ext => ext.id === state.currentId)],
     searchTerm : state => state.params.search,
     pageNumber : state => state.params.page,
+    seriesFilter : state => state.filter,
 };
 const actions = {
     init : (context) => {
@@ -29,7 +30,12 @@ const actions = {
         }
     },
     browse : (context, id) => {
-        if(id) context.commit('setCurrentId', id);
+        if(id && context.state.currentId !== id) {
+            context.commit('setCurrentId', id);
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'getAvailableFilters', payload: id, passThrough: {flag: 'extensions/receiveFilters'}
+            });
+        }
         context.commit('setPageNumber', 1);
         context.commit('setSearchTerm', '');
         _requestSeries(context);
@@ -42,6 +48,10 @@ const actions = {
     changePage : (context, pageNumber) => {
         context.commit('setPageNumber', pageNumber > 1 ? pageNumber : 1);
         _requestSeries(context, context.getters['searchTerm'] ? 'searchSeries' : 'browseSeries');
+    },
+    receiveFilters : (context, payload) => {
+        if(payload.hasOwnProperty.call(payload, 'result'))
+            context.commit('setFilter', payload.result);
     }
 };
 const mutations = {
@@ -52,6 +62,10 @@ const mutations = {
     setCurrentId : (state, id) => { state.currentId = id; },
     setSearchTerm : (state, search) => { state.params.search = search },
     setPageNumber : (state, page) => { state.params.page = page },
+    setFilter : (state, filter) => { state.filter = filter },
+    setSelectedFilters : (state, payload) => {
+        state.filter[payload.filterIndex].selected = payload.selectedValue;
+    }
 };
 
 function _requestSeries(context, fn = 'browseSeries') {
@@ -59,6 +73,7 @@ function _requestSeries(context, fn = 'browseSeries') {
         fn: fn, payload: {
             id: context.state.currentId,
             ...context.state.params,
+            filter: context.state.filter
         }, passThrough: {flag: 'series/receiveSeries'}
     });
     context.commit('series/setLoading', true, {root: true});
