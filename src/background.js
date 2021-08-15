@@ -4,6 +4,7 @@ import {app, BrowserWindow, protocol} from 'electron'
 import {createProtocol} from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, {VUEJS_DEVTOOLS} from 'electron-devtools-installer'
 import helperFunctions from './helpers';
+import downloader from "./downloader";
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const {ipcMain} = require('electron')
@@ -90,6 +91,10 @@ ipcMain.on('from-renderer', async (event, args) => {
     }
   }
   else console.error('function [' + args.fn + '] is not found in helper functions.');
+})
+
+ipcMain.on('download-request', (event, payload) => {
+  downloader(event, payload);
 })
 
 // Exit cleanly on request from parent process in development mode.
