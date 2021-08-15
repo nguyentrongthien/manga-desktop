@@ -54,6 +54,14 @@ export default {
     getAvailableFilters(id) {
         return extensions.get(id).getAvailableFilters();
     },
+    async getChapterImageUrl(payload) {
+        for(let key of Array.from(extensions.keys())) {
+            if(payload.url.includes(key)) {
+                return validator.validateChapter(await extensions.get(key).getChapterImageUrl(payload));
+            }
+        }
+        throw('Extension for ' + payload.url + ' could not be found');
+    },
     downloadFile(payload) {
         return downloader(
             payload.url,

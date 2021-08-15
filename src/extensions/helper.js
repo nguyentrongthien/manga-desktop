@@ -42,5 +42,9 @@ export default {
                     return result.value;
             })
         };
+    },
+    async getChapterImageUrls(payload, imgElementSelector, baseUrl) {
+        let $ = await this.loadUrl(payload.url, baseUrl);
+        return $(imgElementSelector).map( (index, element) => $(element).attr('src')).get();
     }
 }

@@ -11,6 +11,7 @@ const expObj = {
     searchSeries : payload => searchSeries(payload),
     getSeriesInfo : url => isUrlValid(url) ? getSeriesInfo(url) : null,
     getChapterImages : payload => isUrlValid(payload.url) ? getChapterImages(payload) : null,
+    getChapterImageUrl : payload => isUrlValid(payload.url) ? getChapterImageUrl(payload) : null,
     getAvailableFilters : () => getAvailableFilters(),
 }
 
@@ -182,6 +183,10 @@ async function getChapterImages(payload) {
     try {
         return await helper.getImages(payload, '.container-chapter-reader > img', expObj.info.baseUrl);
     } catch (e) { console.log(e); }
+}
+
+async function getChapterImageUrl(payload) {
+    return helper.getChapterImageUrls(payload, '.container-chapter-reader > img', expObj.info.baseUrl);
 }
 
 export default expObj;
