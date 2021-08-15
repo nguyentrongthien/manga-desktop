@@ -4,13 +4,6 @@
         <v-list dense>
             <v-list-item to="/">
                 <v-list-item-action>
-                    <v-icon>mdi-home</v-icon>
-                </v-list-item-action>
-                <v-list-item-title>Home</v-list-item-title>
-            </v-list-item>
-
-            <v-list-item>
-                <v-list-item-action>
                     <v-icon>mdi-library</v-icon>
                 </v-list-item-action>
                 <v-list-item-title>Library</v-list-item-title>
