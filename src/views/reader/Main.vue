@@ -1,19 +1,32 @@
 <template>
-    <v-container class="fill-height py-5">
+    <v-container class="fill-height py-5" fluid>
+<!--        <div class="load-indicator">-->
+<!--            <v-container class="fill-height ma-0 pa-0" fluid>-->
+<!--                <v-row class="fill-height ma-0 pa-0" justify="center" align="stretch" style="background: transparent">-->
+<!--                    <v-col v-for="(page, index) in readersPages" :key="'indicator' + index" :style="calcLoadIndicatorStyle(page.loaded, page.total)"-->
+<!--                           cols="12" :class="index === 0 ? 'my-1 d-flex' : 'mb-1 d-flex'">-->
+<!--                        <div style="align-items: center" class="d-flex caption">-->
+<!--                            {{index + 1}}-->
+<!--                        </div>-->
+<!--                    </v-col>-->
+<!--                </v-row>-->
+<!--            </v-container>-->
+<!--        </div>-->
         <v-row justify="center">
-            <v-card flat class="text-center" min-height="100" width="640" @click.stop="sheet = !sheet">
+            <v-card flat class="text-center" width="640" @click.stop="sheet = !sheet" style="background: rgba(0,0,0,0)">
 
-                <div>
-                    <img v-for="(image, index) in getCurrentPages" :key="'image' + index" width="100%" :src="image" :alt="image" />
-                </div>
+                <transition-group name="fade" mode="out-in">
+                    <v-progress-linear :key="'progress'" :value="loadingProgress" height="25" :color="loadingProgress < 100 ? 'green' : 'black'">
+                        <template v-slot:default="{ value }">
+                            {{ value === 100 ? chapterTitle : 'Loading... ' + value + '%'}}
+                        </template>
+                    </v-progress-linear>
+                    <div v-for="(page, index) in readersPages" :key="'image' + index">
+                        <div v-if="page.error">Error with {{page.url}}</div>
+                        <img v-else-if="loadingProgress >= 100" class="img-page" width="100%" :src="page.localPath" :alt="page.localPath" />
+                    </div>
+                </transition-group>
 
-                <v-fade-transition>
-                    <v-overlay v-if="isLoading"
-                        absolute color="#000"
-                    >
-                        <v-progress-circular indeterminate size="64"></v-progress-circular>
-                    </v-overlay>
-                </v-fade-transition>
             </v-card>
         </v-row>
 
@@ -97,13 +110,14 @@ export default {
     beforeDestroy() {
         this.$store.commit('setDrawer', this.drawer);
         this.$store.commit('setReader', false);
-        window.removeEventListener('ke', this.fireArrowKeyEvent, true);
+        window.removeEventListener('keydown', this.fireArrowKeyEvent, true);
         this.$store.commit('series/setError', null);
     },
     methods: {
         read(index) {
-            if(index >= 0 && index < this.chapters.length) {
+            if(index >= 0 && index < this.chapters.length && this.loadingProgress >= 100) {
                 this.scrollToTop();
+                this.$store.commit('downloads/clearReadersQueue');
                 this.$store.dispatch('series/requestChapterDetail', index);
             }
         },
@@ -118,10 +132,18 @@ export default {
                 this.read(this.previousChapter);
             else if (event.code === 'ArrowRight' && !this.isLoading)
                 this.read(this.nextChapter);
+        },
+        calculateProgress(loaded, total) {
+            return total ? Math.ceil((loaded/total) * 100) : 0;
+        },
+        calcLoadIndicatorStyle(loaded, total) {
+            let perc = total ? Math.ceil((loaded/total) * 100) : 0;
+            return 'background: linear-gradient(to left, #000, #000 0%, #6b6b6b ' + perc + '%, #000 0%);'
         }
     },
     computed: {
         ...mapGetters('series', ['isLoading', 'getCurrentPages', 'getError']),
+        ...mapGetters('downloads', ['readersPages']),
         selectedSeries() {
             let series = this.$store.getters['series/selectedSeries'];
             return series ? series : {};
@@ -130,9 +152,6 @@ export default {
             return this.selectedSeries.chapters ?
                 this.selectedSeries.chapters.map((chapter, index) => ({ text: chapter.title, value: index})) :
                 [{text: 'No chapter'}]
-        },
-        currentChapter() {
-            return this.selectedSeries.chapters ? this.selectedSeries.chapters[this.selectedSeries.reading] : {};
         },
         selectedChapter: {
             get() {
@@ -152,11 +171,34 @@ export default {
             return this.selectedSeries.chapters ?
                 Math.round(((this.selectedSeries.chapters.length - 1 - this.selectedSeries.reading) / (this.selectedSeries.chapters.length - 1)) * 100) :
                 0;
+        },
+        loadingProgress() {
+            let total = this.readersPages.length;
+            let loaded = this.readersPages.filter(item => item.localPath).length
+            return total ? Math.ceil((loaded/total) * 100) : 0;
+        },
+        chapterTitle() {
+            return this.$store.getters['series/selectedSeries'].chapters[this.selectedChapter].title;
         }
     },
 }
 </script>
 
 <style scoped>
-
+    .img-page { /* Weird fix for the gap between img elements */
+        float: left;
+    }
+    .load-indicator {
+        height: 100%;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 50px;
+    }
+    .indicator {
+        display: flex;
+    }
+    .temp {
+        background: linear-gradient(to left, #000, #000 0%, #6b6b6b 75%, #000 0%);
+    }
 </style>
