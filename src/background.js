@@ -5,6 +5,7 @@ import {createProtocol} from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, {VUEJS_DEVTOOLS} from 'electron-devtools-installer'
 import helperFunctions from './helpers';
 import downloader from "./downloader";
+import errors from "./errors";
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const {ipcMain} = require('electron')
@@ -87,7 +88,7 @@ ipcMain.on('from-renderer', async (event, args) => {
       let res = await helperFunctions[args.fn](args.payload);
       event.reply('from-main', { result: res, passThrough: args.passThrough});
     } catch (e) {
-      event.reply('from-main', { error: e.toString(), passThrough: args.passThrough});
+      event.reply('from-main', { error: errors.handle(e), passThrough: args.passThrough});
     }
   }
   else console.error('function [' + args.fn + '] is not found in helper functions.');
