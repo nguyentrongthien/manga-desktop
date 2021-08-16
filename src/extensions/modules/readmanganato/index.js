@@ -10,7 +10,6 @@ const expObj = {
     browseSeries : payload => browseSeries(payload),
     searchSeries : payload => searchSeries(payload),
     getSeriesInfo : url => isUrlValid(url) ? getSeriesInfo(url) : null,
-    getChapterImages : payload => isUrlValid(payload.url) ? getChapterImages(payload) : null,
     getChapterImageUrl : payload => isUrlValid(payload.url) ? getChapterImageUrl(payload) : null,
     getAvailableFilters : () => getAvailableFilters(),
 }
@@ -20,72 +19,65 @@ function isUrlValid(url) {
 }
 
 async function browseSeries(payload) {
-    try {
-        let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
-        return $('.content-genres-item').map((index, element) => {
-            return {
-                url: $($(element).find('a.genres-item-img').get(0)).attr('href'),
-                title: $($(element).find('div.genres-item-info > h3 > a.genres-item-name').get(0)).text(),
-                img: $($(element).find('img.img-loading').get(0)).attr('src'),
-                latestChapter: $($(element).children('div.genres-item-info > a.genres-item-chap').get(0)).text(),
-                latestChapterUrl: $($(element).children('div.genres-item-info > a.genres-item-chap').get(0)).attr('href'),
-                views: $($(element).find('div.genres-item-info > p.genres-item-view-time > span.genres-item-view').get(0)).text(),
-                sourceId: expObj.info.id
-            }
-        }).get();
-    } catch (e) { console.log(e); }
+    let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
+    return $('.content-genres-item').map((index, element) => {
+        return {
+            url: $($(element).find('a.genres-item-img').get(0)).attr('href'),
+            title: $($(element).find('div.genres-item-info > h3 > a.genres-item-name').get(0)).text(),
+            img: $($(element).find('img.img-loading').get(0)).attr('src'),
+            latestChapter: $($(element).children('div.genres-item-info > a.genres-item-chap').get(0)).text(),
+            latestChapterUrl: $($(element).children('div.genres-item-info > a.genres-item-chap').get(0)).attr('href'),
+            views: $($(element).find('div.genres-item-info > p.genres-item-view-time > span.genres-item-view').get(0)).text(),
+            sourceId: expObj.info.id
+        }
+    }).get();
 }
 
 async function searchSeries(payload) {
-    try {
-        let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
-        return $('div.panel-search-story > div.search-story-item').map((index, element) => {
-            return {
-                url: $($(element).find('a.item-img').get(0)).attr('href'),
-                title: $($(element).find('div.item-right > h3 > a.item-title').get(0)).text(),
-                img: $($(element).find('a.item-img > img.img-loading').get(0)).attr('src'),
-                latestChapter: $($(element).children('div.item-right > a.item-chapter').get(0)).text(),
-                latestChapterUrl: $($(element).children('div.item-right > a.item-chapter').get(0)).attr('href'),
-                views: $($(element).find('div.item-right > span').last()).text(),
-                sourceId: expObj.info.id
-            }
-        }).get();
-    } catch (e) { console.log(e); }
+    let $ = await helper.loadUrl(getUrl(payload), expObj.info.baseUrl);
+    return $('div.panel-search-story > div.search-story-item').map((index, element) => {
+        return {
+            url: $($(element).find('a.item-img').get(0)).attr('href'),
+            title: $($(element).find('div.item-right > h3 > a.item-title').get(0)).text(),
+            img: $($(element).find('a.item-img > img.img-loading').get(0)).attr('src'),
+            latestChapter: $($(element).children('div.item-right > a.item-chapter').get(0)).text(),
+            latestChapterUrl: $($(element).children('div.item-right > a.item-chapter').get(0)).attr('href'),
+            views: $($(element).find('div.item-right > span').last()).text(),
+            sourceId: expObj.info.id
+        }
+    }).get();
 }
 
 async function getAvailableFilters() {
-    try {
-        let $ = await helper.loadUrl(expObj.info.baseUrl);
-        let arr = [{
-            name: 'Category',
-            key: 'category',
-            selected: 0,
-            values: []
-        }];
-        $('div.panel-category > p.pn-category-row').each((index, element) => {
-            if(index <= 1) {
-                arr.push({
-                    name: index === 0 ? 'Type' : 'State',
-                    key: index === 0 ? 'type' : 'state',
-                    selected: 0,
-                    values: $(element).find('a.a-h').map((i, child) => ({
-                        name: $(child).text(),
-                        value: helper.getParams($(child).attr('href'), 'type'),
-                    })).get()
-                });
-            } else {
-                $(element).find('a.a-h').each((i, child) => {
-                    let href = $(child).attr('href');
-                    arr[0].values.push({
-                        name: $(child).text(),
-                        value: href.substr(href.lastIndexOf('/') + 1),
-                    })
+    let $ = await helper.loadUrl(expObj.info.baseUrl);
+    let arr = [{
+        name: 'Category',
+        key: 'category',
+        selected: 0,
+        values: []
+    }];
+    $('div.panel-category > p.pn-category-row').each((index, element) => {
+        if(index <= 1) {
+            arr.push({
+                name: index === 0 ? 'Type' : 'State',
+                key: index === 0 ? 'type' : 'state',
+                selected: 0,
+                values: $(element).find('a.a-h').map((i, child) => ({
+                    name: $(child).text(),
+                    value: helper.getParams($(child).attr('href'), 'type'),
+                })).get()
+            });
+        } else {
+            $(element).find('a.a-h').each((i, child) => {
+                let href = $(child).attr('href');
+                arr[0].values.push({
+                    name: $(child).text(),
+                    value: href.substr(href.lastIndexOf('/') + 1),
                 })
-            }
-        });
-        return arr;
-    } catch (e) { console.log(e); }
-
+            })
+        }
+    });
+    return arr;
 }
 
 function getUrl(payload) {
@@ -120,24 +112,22 @@ function formatSearchTerm(search) {
 }
 
 async function getSeriesInfo(url) {
-    try {
-        let obj = {};
-        let $ = await helper.loadUrl(url, expObj.info.baseUrl);
-        obj.url = url;
-        obj.sourceId = expObj.info.id;
-        obj.hash = helper.getHashFromString(url);
-        obj.title = $($('div.panel-story-info > div.story-info-right > h1').get(0)).text();
-        obj.isSaved = false;
-        obj.authors = _getAuthors($);
-        obj.status = _getStatus($);
-        obj.views = _getViews($);
-        obj.genres = _getGenres($);
-        obj.img = $($('div.panel-story-info > div.story-info-left > span.info-image > img.img-loading').get(0)).attr('src');
-        obj.summary = $($('div#panel-story-info-description').get(0)).text();
-        obj.chapters = _getChapters($);
-        obj.reading = obj.chapters.length - 1;
-        return obj;
-    } catch (e) { console.log(e); }
+    let obj = {};
+    let $ = await helper.loadUrl(url, expObj.info.baseUrl);
+    obj.url = url;
+    obj.sourceId = expObj.info.id;
+    obj.hash = helper.getHashFromString(url);
+    obj.title = $($('div.panel-story-info > div.story-info-right > h1').get(0)).text();
+    obj.isSaved = false;
+    obj.authors = _getAuthors($);
+    obj.status = _getStatus($);
+    obj.views = _getViews($);
+    obj.genres = _getGenres($);
+    obj.img = $($('div.panel-story-info > div.story-info-left > span.info-image > img.img-loading').get(0)).attr('src');
+    obj.summary = $($('div#panel-story-info-description').get(0)).text();
+    obj.chapters = _getChapters($);
+    obj.reading = obj.chapters.length - 1;
+    return obj;
 }
 
 function _getAuthors($) {
@@ -177,12 +167,6 @@ function _getChapters($) {
         order: i,
         images: [],
     })).get();
-}
-
-async function getChapterImages(payload) {
-    try {
-        return await helper.getImages(payload, '.container-chapter-reader > img', expObj.info.baseUrl);
-    } catch (e) { console.log(e); }
 }
 
 async function getChapterImageUrl(payload) {

@@ -1,6 +1,5 @@
 // const fs = require('fs');
 let extensions = new Map();
-import downloader from './downloader';
 import validator from "./validator";
 
 (function updateModules() {
@@ -43,14 +42,6 @@ export default {
         }
         throw('Extension for ' + url + ' could not be found');
     },
-    async viewChapter(payload) {
-        for(let key of Array.from(extensions.keys())) {
-            if(payload.url.includes(key)) {
-                return validator.validateChapter(await extensions.get(key).getChapterImages(payload));
-            }
-        }
-        throw('Extension for ' + payload.url + ' could not be found');
-    },
     getAvailableFilters(id) {
         return extensions.get(id).getAvailableFilters();
     },
@@ -62,11 +53,4 @@ export default {
         }
         throw('Extension for ' + payload.url + ' could not be found');
     },
-    downloadFile(payload) {
-        return downloader(
-            payload.url,
-            payload.fileName,
-            payload.outputPath
-        )
-    }
 }
