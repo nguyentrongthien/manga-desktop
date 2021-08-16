@@ -17,6 +17,8 @@
                 <h2 class="font-weight-light white--text mt-3">Loading...</h2>
             </v-overlay>
 
+            <Systembar />
+
         </v-app>
     </v-app>
 </template>
@@ -24,16 +26,19 @@
 <script>
 import Sidebar from "./components/cores/Sidebar";
 import Appbar from "./components/cores/Appbar";
+import Systembar from "./components/cores/Systembar";
 import { mapGetters } from 'vuex';
 
 export default {
     name: 'App',
     components: {
         Sidebar,
-        Appbar
+        Appbar,
+        Systembar
     },
     created () {
         window.ipcRenderer.receive('from-main', (payload) => {
+            if(payload.passThrough) console.log(payload);
             if(payload.passThrough) this.$store.dispatch(payload.passThrough.flag, payload);
         })
     },
