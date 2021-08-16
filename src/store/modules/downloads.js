@@ -76,7 +76,6 @@ const actions = {
                             context.commit('updateCurrentItem', {key: 'currentIndex', value: index + 1});
                             requestItemDownload(context, {flag: 'downloads/runDownloadQueue'})
                         } else { // We finish the last url of the current queue item
-                            // TODO: Implement post-process stuffs (e.g write data file, etc...)
                             context.dispatch(context.getters['getCurrentItem'].passThrough.postProcessor,
                                 {
                                     result: {
@@ -88,7 +87,6 @@ const actions = {
                             context.commit('updateCurrentItem', {key: 'completed', value: true});
                             context.commit('setCurrentHash');
 
-                            // TODO: Start the next item in queue
                             context.dispatch('startQueue').then();
                         }
                     } else if (payload.result.total) {

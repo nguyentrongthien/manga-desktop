@@ -34,7 +34,7 @@ const getters = {
     isSeriesBeingProcessed : state => urlOrHash => {
         if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
         let index = state.processingSeries.findIndex(hash => hash === urlOrHash);
-        return index < 0;
+        return index >= 0;
     },
     isChapterBeingProcessed : state => urlOrHash => {
         if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
@@ -150,6 +150,31 @@ const actions = {
         );
         context.commit('setLoading', false);
     },
+    updateSeriesDetail : (context, payload) => {
+        context.commit('setError');
+        if(!payload.result && !payload.error) {
+            window.ipcRenderer.send('from-renderer', { // Request it from the remote host
+                fn: 'viewSeries', payload: payload, passThrough: {flag: 'series/updateSeriesDetail', url: payload}
+            });
+            context.commit('setSeriesInProcessingList', payload);
+        } else {
+            handleReply(context, payload,
+                () => {
+                    if(context.getters['selectedSeries'].hash === payload.result.hash) {
+                        payload.result.reading = context.getters['selectedSeries'].reading;
+                        payload.result.isSaved = true;
+                        context.commit('setSelectedSeries', payload.result);
+                        writeSelectedSeriesLocalData(context);
+                        context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
+
+                        context.commit('removeSeriesFromProcessingList', payload.result.url);
+                    }
+                }, () => {context.commit('setError', payload.error);}
+            );
+            context.commit('removeSeriesFromProcessingList', payload.passThrough.url);
+
+        }
+    },
     requestChapterDetail : (context, index) => { // Requesting chapter's details of the currently selected series
         context.commit('setError');
         context.commit('setSelectedSeriesCurrentChapter', index);
@@ -190,18 +215,16 @@ const actions = {
     saveSelectedSeriesToLocal : (context, payload) => {
         context.commit('setSaving');
         if(!payload) { // First we download the cover image
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'downloadFile',
-                payload: {
-                    url: context.getters['selectedSeries'].img,
-                    fileName: 'cover',
-                    outputPath: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
-                },
+            window.ipcRenderer.send('download-request', {
+                url: context.getters['selectedSeries'].img,
+                fileName: 'cover',
+                targetLocation: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
+                referer: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
                 passThrough: {
                     flag: 'series/saveSelectedSeriesToLocal',
                     hash: context.getters['selectedSeries'].hash,
                     coverDownloaded: true
-                }
+                },
             });
         } else { // Then we write the series data to local
             if(payload.passThrough.coverDownloaded)
@@ -256,7 +279,6 @@ const actions = {
         if(context.getters['selectedSeries'].url === payload.passThrough.parentUrl)
             context.getters['selectedSeries'].chapters[payload.passThrough.chapterIndex].isDownloaded = true;
 
-        // TODO chapter's data file
         window.ipcRenderer.send('from-renderer', { fn: 'writeData',
             payload: {path: payload.passThrough.outputPath, file: '/' + chapterDataFileName, data: payload.result} });
     },
@@ -295,6 +317,7 @@ function _requestChapterImagesUrls(context, chapterUrl, passThrough) { // Reques
 }
 
 function _requestChapterImagesUrlsToSaveToLocal(context, chapter, index) {
+    context.commit('setChapterInProcessingList', chapter.url);
     _requestChapterImagesUrls(context, chapter.url, {
         flag: 'series/receiveChapterImageUrls',
         chapterIndex: index,

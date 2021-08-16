@@ -1,5 +1,5 @@
 <template>
-    <v-container class="fill-height py-5">
+    <v-container class="fill-height py-5" v-resize="onResize">
         <v-row justify="center" class="fill-height">
             <v-col sm="11" cols="12">
                 <v-row v-if="getError" justify="center">
@@ -46,35 +46,63 @@
 
                         <v-card class="mx-auto" outlined color="#000" :loading="isLoading">
 
-                            <v-card-text>
+                            <v-card-text ref="descriptionBox">
 
-                                <h2>
+                                <h2 class="pb-4">
                                     {{ selectedSeries.title ? selectedSeries.title : 'No Title' }}
                                 </h2>
-                                <p class="font-weight-light subtitle-1 py-4">
+                                <p class="font-weight-light subtitle-1" style="max-height: 200px; overflow-y: scroll; overflow-x: hidden">
                                     {{ selectedSeries.summary ? selectedSeries.summary : 'No Description' }}
                                 </p>
-                                <v-row class="mx-0">
+                                <v-row class="mx-0 pt-4">
                                     <v-btn outlined color="grey" @click.stop="$router.back()">
                                         <v-icon>mdi-arrow-left</v-icon> back
                                     </v-btn>
                                     <v-spacer></v-spacer>
                                     <template v-if="selectedSeries.hash">
-                                        <v-btn icon class="mx-2" color="red"
-                                               @click.stop="downloadAllChapters" :loading="isDownloadQueueRunning">
-                                            <v-icon>mdi-download</v-icon>
-                                        </v-btn>
-                                        <v-btn v-if="selectedSeries.isSaved"
-                                               icon class="mx-2" color="green">
-                                            <v-icon>mdi-bookmark-check-outline</v-icon>
+                                        <v-btn v-if="selectedSeries.isSaved" icon class="mx-2" color="green"
+                                               title="Update For New Chapters" :loading="isSeriesBeingProcessed" @click="updateSeries">
+                                            <v-icon>mdi-update</v-icon>
                                         </v-btn>
                                         <v-btn v-else icon class="mx-2" color="red"
                                                title="Add to library" :loading="isSaving" @click="saveSeries">
                                             <v-icon>mdi-bookmark-plus-outline</v-icon>
                                         </v-btn>
-                                        <v-btn color="red" outlined @click.stop="readFirstChapter">
-                                            start reading <v-icon>mdi-play</v-icon>
+                                        <v-btn color="red" outlined @click.stop="read(selectedSeries.reading)">
+                                            continue <v-icon>mdi-play</v-icon>
                                         </v-btn>
+                                        <v-menu transition="slide-y-transition" offset-y left close-on-content-click>
+
+                                            <template v-slot:activator="{ on, attrs }">
+                                                <v-btn color="red" icon class="ml-2"
+                                                       v-bind="attrs"
+                                                       v-on="on">
+                                                    <v-icon>mdi-dots-vertical</v-icon>
+                                                </v-btn>
+                                            </template>
+
+                                            <v-list dense min-width="200">
+                                                <v-list-item @click="readFirstChapter">
+                                                    <v-list-item-title>Read First Chapter</v-list-item-title>
+                                                    <v-list-item-icon>
+                                                        <v-icon small>mdi-page-first</v-icon>
+                                                    </v-list-item-icon>
+                                                </v-list-item>
+                                                <v-list-item @click="readLastChapter">
+                                                    <v-list-item-title>Read Last Chapter</v-list-item-title>
+                                                    <v-list-item-icon>
+                                                        <v-icon small>mdi-page-last</v-icon>
+                                                    </v-list-item-icon>
+                                                </v-list-item>
+                                                <!-- TODO: disable or display status while downloading-->
+                                                <v-list-item @click="downloadAllChapters">
+                                                    <v-list-item-title>Download</v-list-item-title>
+                                                    <v-list-item-icon>
+                                                        <v-icon small>mdi-download</v-icon>
+                                                    </v-list-item-icon>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-menu>
                                     </template>
                                     <template v-else>
                                         <v-btn icon class="mx-2" color="red"
@@ -88,12 +116,12 @@
                                 </v-row>
                             </v-card-text>
 
-                            <v-divider class="mt-10"></v-divider>
+                            <v-divider class="mt-5"></v-divider>
 
                             <v-virtual-scroll v-if="selectedSeries.chapters"
                                 :bench="0"
                                 :items="selectedSeries.chapters"
-                                height="600"
+                                :height="chapterBoxHeight"
                                 item-height="64"
                             >
                                 <template v-slot:default="{ index, item }">
@@ -139,6 +167,8 @@ export default {
     name: "Detail",
     data: () => ({
         index: null,
+        window: 0,
+        descriptionBoxHeight: 0,
     }),
     created() {
         this.index = this.$route.params.index;
@@ -154,14 +184,28 @@ export default {
         readFirstChapter() {
             this.read(this.selectedSeries.chapters.length - 1);
         },
+        readLastChapter() {
+            this.read(0);
+        },
+        downloadAllChapters() {
+            this.$store.dispatch('series/saveAllChaptersOfCurrentSeriesToLocal');
+        },
         download(chapterUrl) {
             this.$store.dispatch('series/saveChapterOfCurrentSeriesToLocal', chapterUrl);
         },
         saveSeries() {
             this.$store.dispatch('series/saveSelectedSeriesToLocal');
         },
-        downloadAllChapters() {
-            this.$store.dispatch('series/saveAllChaptersOfCurrentSeriesToLocal');
+        updateSeries() {
+            this.$store.dispatch('series/updateSeriesDetail', this.selectedSeries.url);
+        },
+        onResize () {
+            this.window = { x: window.innerWidth, y: window.innerHeight }
+            if(this.$refs.descriptionBox)
+                this.descriptionBoxHeight = this.$refs.descriptionBox.clientHeight;
+        },
+        test() {
+            console.log(this.$refs);
         }
     },
     computed: {
@@ -175,6 +219,12 @@ export default {
         selectedSeries() {
             let series = this.$store.getters['series/selectedSeries'];
             return series ? series : {};
+        },
+        chapterBoxHeight() {
+            return this.window.y - this.descriptionBoxHeight - 120;
+        },
+        isSeriesBeingProcessed() {
+            return this.$store.getters['series/isSeriesBeingProcessed'](this.selectedSeries.url);
         }
     }
 }
