@@ -143,8 +143,8 @@ function _getStatus($) {
 }
 
 function _getViews($) {
-    let element = $('div.panel-story-info > div.story-info-right > table.story-info-right-extent > p')
-        .filter((i, el) => $(el).html().toLowerCase().includes('views :')).get(0);
+    let element = $('div.panel-story-info > div.story-info-right > div.story-info-right-extent > p')
+        .filter((i, el) => $(el).html().toLowerCase().includes('view :')).get(0);
     return $($(element).find('span.stre-value').get(0)).text();
 }
 
