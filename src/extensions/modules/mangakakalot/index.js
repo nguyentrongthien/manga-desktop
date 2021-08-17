@@ -107,63 +107,59 @@ function formatSearchTerm(search) {
 async function getSeriesInfo(url) {
     let obj = {};
     let $ = await helper.loadUrl(url, expObj.info.baseUrl);
-    let infoEl = $($('.manga-info-text').get(0));
     obj.url = url;
     obj.sourceId = expObj.info.id;
     obj.hash = helper.getHashFromString(url);
     obj.isSaved = false;
-    infoEl.children('li').each((i, el) => {
-        if($(el).find('h1').length > 0 && !obj.title) {
-            obj.title = $($(el).find('h1').get(0)).html();
-        }
-        else if($(el).html().toLowerCase().includes('author') && !obj.authors) {
-            obj.authors = [];
-            $(el).children('a').each((i, childEl) => {
-                obj.authors.push($(childEl).text());
-            })
-        }
-        else if($(el).html().toLowerCase().includes('status') && !obj.status) {
-            let tmp = $(el).text().replaceAll(' ', '');
-            obj.status = tmp.substring(tmp.indexOf(':') + 1);
-        }
-        else if($(el).html().toLowerCase().includes('view') && !obj.views) {
-            let tmp = $(el).text().replaceAll(' ', '');
-            obj.views = tmp.substring(tmp.indexOf(':') + 1);
-        }
-        else if($(el).html().toLowerCase().includes('genres') && !obj.genres) {
-            obj.genres = [];
-            $(el).children('a').each((i, childEl) => {
-                obj.genres.push($(childEl).text());
-            })
-        }
-    })
+    obj.title = $($('div.manga-info-top > ul.manga-info-text > li > h1').get(0)).text();
+    obj.authors = _getAuthors($);
+    obj.status = _getStatus($);
+    obj.views = _getViews($);
+    obj.genres = _getGenres($);
     obj.img = $($($('.manga-info-pic').get(0)).find('img').get(0)).attr('src')
     obj.summary = $($('#noidungm').get(0)).text();
-    obj.chapters = [];
-    $($('div#chapter > div.manga-info-chapter > div.chapter-list').get(0)).children('div.row').each((index, el) => {
-        let tmp = {};
-        $(el).children('span').each((i, childEl) => {
-            if($(childEl).html().toLowerCase().includes('href') && $(childEl).html().toLowerCase().includes('title')) {
-                tmp.url = $($(childEl).find('a').get(0)).attr('href');
-                tmp.title = $($(childEl).find('a').get(0)).attr('title');
-                tmp.name = $($(childEl).find('a').get(0)).text();
-            }
-            else if ($('<div />').append($(childEl).clone()).html().toLowerCase().includes('title')) {
-                tmp.updated = $(childEl).attr('title');
-            } else if (!tmp.views) {
-                tmp.views = $(childEl).text();
-            }
-            tmp.isRead = false;
-            tmp.isDownloaded = false;
-            tmp.hash = helper.getHashFromString(tmp.url);
-            tmp.order = index;
-            tmp.images = [];
-        })
-        obj.chapters.push(tmp);
-    })
-
+    obj.chapters = _getChapters($);
     obj.reading = obj.chapters.length - 1;
     return obj;
+}
+
+function _getAuthors($) {
+    let row = $('div.manga-info-top > ul.manga-info-text > li')
+        .filter((i, el) => $(el).html().toLowerCase().includes('author(s)')).get(0);
+    return $(row).find('a').map((i, e) => $(e).text()).get()
+}
+
+function _getStatus($) {
+    let row = $('div.manga-info-top > ul.manga-info-text > li')
+        .filter((i, el) => $(el).html().toLowerCase().includes('status')).get(0);
+    return $(row).text().substr($(row).text().indexOf(':') + 1);
+}
+
+function _getViews($) {
+    let element = $('div.manga-info-top > ul.manga-info-text > li')
+        .filter((i, el) => $(el).html().toLowerCase().includes('views :')).get(0);
+    return $(element).text().substr($(element).text().indexOf(':') + 1);
+}
+
+function _getGenres($) {
+    let row = $('div.manga-info-top > ul.manga-info-text > li')
+        .filter((i, el) => $(el).html().toLowerCase().includes('genres :')).get(0);
+    return $(row).find('a').map((i, e) => $(e).text()).get()
+}
+
+function _getChapters($) {
+    return $('div#chapter > div.manga-info-chapter > div.chapter-list > div.row').map((i, el) => ({
+        url: $($(el).find('span > a').get(0)).attr('href'),
+        title: $($(el).find('span > a').get(0)).attr('title'),
+        name: $($(el).find('span > a').get(0)).text(),
+        updated: $($(el).find('span').get(2)).text(),
+        views: $($(el).find('span').get(1)).text(),
+        isRead: false,
+        isDownloaded: false,
+        hash: helper.getHashFromString($($(el).find('span > a').get(0)).attr('href')),
+        order: i,
+        images: [],
+    })).get();
 }
 
 async function getChapterImageUrl(payload) {

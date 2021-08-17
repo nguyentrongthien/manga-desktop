@@ -1,5 +1,6 @@
 export default {
     handle(error) {
+        console.log(error);
         try {
             _handleNoInternetException(error);
 
