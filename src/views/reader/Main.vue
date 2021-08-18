@@ -1,17 +1,6 @@
 <template>
     <v-container class="fill-height py-5" fluid>
-<!--        <div class="load-indicator">-->
-<!--            <v-container class="fill-height ma-0 pa-0" fluid>-->
-<!--                <v-row class="fill-height ma-0 pa-0" justify="center" align="stretch" style="background: transparent">-->
-<!--                    <v-col v-for="(page, index) in readersPages" :key="'indicator' + index" :style="calcLoadIndicatorStyle(page.loaded, page.total)"-->
-<!--                           cols="12" :class="index === 0 ? 'my-1 d-flex' : 'mb-1 d-flex'">-->
-<!--                        <div style="align-items: center" class="d-flex caption">-->
-<!--                            {{index + 1}}-->
-<!--                        </div>-->
-<!--                    </v-col>-->
-<!--                </v-row>-->
-<!--            </v-container>-->
-<!--        </div>-->
+        <LoadIndicator />
         <v-row justify="center">
             <v-card flat class="text-center" width="640" @click.stop="sheet = !sheet" style="background: rgba(0,0,0,0)">
 
@@ -23,7 +12,8 @@
                     </v-progress-linear>
                     <div v-for="(page, index) in readersPages" :key="'image' + index">
                         <div v-if="page.error">Error with {{page.url}}</div>
-                        <img v-else-if="loadingProgress >= 100" class="img-page" width="100%" :src="page.localPath" :alt="page.localPath" />
+                        <img v-else-if="page.localPath" class="img-page" :id="'image' + index"
+                             width="100%" :src="page.localPath" :alt="page.localPath" />
                     </div>
                 </transition-group>
 
@@ -94,9 +84,11 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import LoadIndicator from "./components/LoadIndicator";
 
 export default {
     name: "Main",
+    components: {LoadIndicator},
     data: () => ({
         drawer: null,
         sheet: false,
@@ -132,13 +124,6 @@ export default {
                 this.read(this.previousChapter);
             else if (event.code === 'ArrowRight' && !this.isLoading)
                 this.read(this.nextChapter);
-        },
-        calculateProgress(loaded, total) {
-            return total ? Math.ceil((loaded/total) * 100) : 0;
-        },
-        calcLoadIndicatorStyle(loaded, total) {
-            let perc = total ? Math.ceil((loaded/total) * 100) : 0;
-            return 'background: linear-gradient(to left, #000, #000 0%, #6b6b6b ' + perc + '%, #000 0%);'
         }
     },
     computed: {
@@ -187,18 +172,5 @@ export default {
 <style scoped>
     .img-page { /* Weird fix for the gap between img elements */
         float: left;
-    }
-    .load-indicator {
-        height: 100%;
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 50px;
-    }
-    .indicator {
-        display: flex;
-    }
-    .temp {
-        background: linear-gradient(to left, #000, #000 0%, #6b6b6b 75%, #000 0%);
     }
 </style>

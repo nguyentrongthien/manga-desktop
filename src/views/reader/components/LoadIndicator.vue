@@ -1,0 +1,64 @@
+<template>
+    <div class="load-indicator-container">
+        <div class="load-indicator-item" v-for="(page, index) in readersPages" :key="'indicator' + index"
+             :style="calcLoadIndicatorStyle(page.loaded, page.total)" @click.stop="scrollTo('#image' + index)">
+            {{index + 1}}
+        </div>
+    </div>
+
+</template>
+
+<script>
+import {mapGetters} from "vuex";
+
+export default {
+    name: "LoadIndicator",
+    methods: {
+        scrollTo(elementId) {
+            this.$vuetify.goTo(elementId, {duration: 2000, easing: 'easeInOutCubic'});
+        },
+        calcLoadIndicatorStyle(loaded, total) {
+            let perc = total ? Math.ceil((loaded/total) * 100) : 0;
+            return 'background: linear-gradient(to left, #000, #000 0%, #6b6b6b ' + perc + '%, #000 0%);'
+        }
+    },
+    computed: {
+        ...mapGetters('downloads', ['readersPages']),
+    }
+}
+</script>
+
+<style scoped>
+    .load-indicator {
+        height: 100%;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 50px;
+    }
+    .indicator {
+        display: flex;
+    }
+    .load-indicator-container {
+        display: flex;
+        flex-flow: column wrap;
+        height: 100%;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 50px;
+    }
+    .load-indicator-item {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+        margin: 1px 0;
+        font-size: .7em;
+        padding: 0 15px;
+    }
+
+    .load-indicator-item:hover {
+        cursor: pointer;
+        border-left: 3px solid white;
+    }
+</style>
