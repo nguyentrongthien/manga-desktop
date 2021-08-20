@@ -5,15 +5,11 @@ import extensions from './../extensions';
 export default {
     ...extensions,
     readData : (filePath) => {
-        try {
-            return JSON.parse(fs.readFileSync(filePath));
-        } catch(e) { console.log(e); throw e.toString(); }
+        return JSON.parse(fs.readFileSync(filePath));
     },
     writeData : (args) => {
-        try {
-            if(!fs.existsSync(args.path)) fs.mkdirSync(args.path, {recursive: true});
-            fs.writeFileSync(args.path + '/' + args.file, JSON.stringify(args.data));
-        } catch(e) { console.log(e); }
+        if(!fs.existsSync(args.path)) fs.mkdirSync(args.path, {recursive: true});
+        fs.writeFileSync(args.path + '/' + args.file, JSON.stringify(args.data));
     },
     getAppPath : () => app.getPath('appData'),
     getDir : async (multiple = false) => {
