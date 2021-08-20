@@ -60,6 +60,9 @@ export default {
             this.$router.push({path: '/series/detail'})
         }
     },
+    beforeMount() {
+        this.$store.dispatch('series/init');
+    },
     computed: {
         ...mapGetters('series', ['isLoading', 'isScanning']),
         series() {
