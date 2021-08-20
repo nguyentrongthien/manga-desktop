@@ -17,8 +17,6 @@
                 <h2 class="font-weight-light white--text mt-3">Loading...</h2>
             </v-overlay>
 
-            <Systembar />
-
         </v-app>
     </v-app>
 </template>
@@ -26,7 +24,6 @@
 <script>
 import Sidebar from "./components/cores/Sidebar";
 import Appbar from "./components/cores/Appbar";
-import Systembar from "./components/cores/Systembar";
 import { mapGetters } from 'vuex';
 
 export default {
@@ -34,7 +31,6 @@ export default {
     components: {
         Sidebar,
         Appbar,
-        Systembar
     },
     created () {
         window.ipcRenderer.receive('from-main', (payload) => {
@@ -62,10 +58,10 @@ export default {
 
 <style>
     *::placeholder {
-        color: #b2aba1;
+        color: #000000;
     }
     *::-webkit-scrollbar {
-        background: transparent;
+        background: black;
         width: 7px;
     }
     *::-webkit-scrollbar:hover {

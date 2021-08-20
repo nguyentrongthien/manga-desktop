@@ -60,7 +60,7 @@
                                                title="Add to library" :loading="isSaving" @click="saveSeries">
                                             <v-icon>mdi-bookmark-plus-outline</v-icon>
                                         </v-btn>
-                                        <v-btn color="red" outlined @click.stop="read(selectedSeries.reading)">
+                                        <v-btn color="red" outlined @click.stop="read(selectedSeries.reading)" :title="currentChapterTitle">
                                             {{ startReadingButton }} <v-icon>mdi-play</v-icon>
                                         </v-btn>
                                         <v-menu transition="slide-y-transition" offset-y left close-on-content-click>
@@ -235,6 +235,9 @@ export default {
         },
         startReadingButton() {
             return this.selectedSeries.reading === this.selectedSeries.chapters.length - 1 ? 'start reading' : 'continue reading';
+        },
+        currentChapterTitle() {
+            return this.selectedSeries.chapters[this.selectedSeries.reading].title;
         }
     },
     watch: {

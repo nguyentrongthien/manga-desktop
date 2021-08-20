@@ -1,5 +1,5 @@
 <template>
-    <div class="load-indicator-container">
+    <div class="load-indicator-container" :style="'width:' + loadIndicatorContainerWidth + 'px'">
         <div class="load-indicator-item" v-for="(page, index) in readersPages" :key="'indicator' + index"
              :style="calcLoadIndicatorStyle(page.loaded, page.total)" @click.stop="scrollTo('#image' + index)">
             {{index + 1}}
@@ -24,6 +24,10 @@ export default {
     },
     computed: {
         ...mapGetters('downloads', ['readersPages']),
+        loadIndicatorContainerWidth() {
+            let pages = this.readersPages.length;
+            return Math.ceil(pages/55) ? Math.ceil(pages/55) * 40 : 40;
+        }
     }
 }
 </script>
@@ -46,7 +50,6 @@ export default {
         position: fixed;
         top: 0;
         right: 0;
-        width: 50px;
     }
     .load-indicator-item {
         display: flex;
@@ -54,7 +57,8 @@ export default {
         flex-grow: 1;
         margin: 1px 0;
         font-size: .7em;
-        padding: 0 15px;
+        padding: 0 10px;
+        border-left: 1px solid #313131;
     }
 
     .load-indicator-item:hover {
