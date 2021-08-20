@@ -2,14 +2,6 @@
     <v-container class="fill-height py-5" v-resize="onResize">
         <v-row justify="center" class="fill-height">
             <v-col sm="11" cols="12">
-                <v-row v-if="getError" justify="center">
-                    <v-col cols="12">
-                        <h2 class="text-center red--text">
-                            {{ getError }}
-                        </h2>
-                    </v-col>
-
-                </v-row>
                 <v-row justify="center" align="start">
                     <v-col sm="4" cols="12">
                         <v-card class="mx-auto fill-height" max-width="400" shaped :loading="isLoading">
@@ -69,7 +61,7 @@
                                             <v-icon>mdi-bookmark-plus-outline</v-icon>
                                         </v-btn>
                                         <v-btn color="red" outlined @click.stop="read(selectedSeries.reading)">
-                                            continue <v-icon>mdi-play</v-icon>
+                                            {{ startReadingButton }} <v-icon>mdi-play</v-icon>
                                         </v-btn>
                                         <v-menu transition="slide-y-transition" offset-y left close-on-content-click>
 
@@ -157,6 +149,20 @@
                 </v-row>
             </v-col>
         </v-row>
+
+        <v-snackbar
+            v-model="snackbar" multi-line top timeout="3500" @input="clearErrors">
+            {{ getError }}
+
+            <template v-slot:action="{ attrs }">
+                <v-btn color="red"
+                    text v-bind="attrs"
+                    @click="snackbar = false"
+                >
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
     </v-container>
 </template>
 
@@ -169,6 +175,7 @@ export default {
         index: null,
         window: 0,
         descriptionBoxHeight: 0,
+        snackbar: false,
     }),
     created() {
         this.index = this.$route.params.index;
@@ -204,8 +211,8 @@ export default {
             if(this.$refs.descriptionBox)
                 this.descriptionBoxHeight = this.$refs.descriptionBox.clientHeight;
         },
-        test() {
-            console.log(this.$refs);
+        clearErrors() {
+            this.$store.commit('series/setError');
         }
     },
     computed: {
@@ -221,10 +228,18 @@ export default {
             return series ? series : {};
         },
         chapterBoxHeight() {
-            return this.window.y - this.descriptionBoxHeight - 120;
+            return this.window.y - this.descriptionBoxHeight - 140;
         },
         isSeriesBeingProcessed() {
             return this.$store.getters['series/isSeriesBeingProcessed'](this.selectedSeries.url);
+        },
+        startReadingButton() {
+            return this.selectedSeries.reading === this.selectedSeries.chapters.length - 1 ? 'start reading' : 'continue reading';
+        }
+    },
+    watch: {
+        getError(val) {
+            if(val) this.snackbar = true;
         }
     }
 }
