@@ -1,4 +1,6 @@
 import {createHash} from "crypto";
+import { codes } from "../../errors";
+const path = require('path');
 
 const seriesDataFileName = '.md_series';
 const chapterDataFileName = '.md_chapter';
@@ -99,21 +101,23 @@ const mutations = {
 
 const actions = {
     init : (context) => {
-        context.commit('setScanning');
-        window.ipcRenderer.send('from-renderer', {
-            fn: 'scanDir',
-            payload: {path: context.rootGetters['getDirectory'], fileName: seriesDataFileName},
-            passThrough: {flag: 'series/initComplete'}
-        });
+        if(context.rootGetters['getDirectory']) {
+            context.commit('setScanning');
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'scanDir',
+                payload: {path: context.rootGetters['getDirectory'], fileName: seriesDataFileName},
+                passThrough: {flag: 'series/initComplete'}
+            });
+        }
     },
     initComplete : (context, payload) => {
         handleReply(context, payload,
             () => {
                 context.commit('removeAllSeriesFromLocalList');
                 payload.result.forEach(series => {context.commit('addSeriesToLocalList', series);});
-                context.commit('setScanning', false);
-            }, () => {context.commit('setError', payload.error);context.commit('setScanning', false);}
+            }, () => {context.commit('setError', payload.error);}
         )
+        context.commit('setScanning', false);
     },
     receiveSeries : (context, payload) => {
         handleReply(context, payload,
@@ -140,8 +144,8 @@ const actions = {
                 context.commit('setSelectedSeries', payload.result);
                 context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
             }, () => {
-                if(payload.error.includes('no such file or directory') &&
-                    payload.error.includes(payload.passThrough.hash)) { // This means series isn't available locally
+                if(payload.error.includes(codes.FileNotFoundException)) { // This means series isn't available locally
+                    console.log('requesting from source')
                     window.ipcRenderer.send('from-renderer', { // Request it from the remote host
                         fn: 'viewSeries', payload: payload.passThrough.url, passThrough: {flag: 'series/receiveSeriesDetail'}
                     });
@@ -198,11 +202,10 @@ const actions = {
     receiveChapterDetail : (context, payload) => {
         handleReply(context, payload,
             () => {
-                // context.commit('setCachedImages', payload.result.localImages)
                 if(payload.result.imageUrls && payload.result.imageUrls.length)
                     context.commit('downloads/populateReadersQueue', payload.result.localImages.map((item, index) => ({
                             url: payload.result.imageUrls[index],
-                            localPath: item
+                            localPath: path.join(context.rootGetters['getDirectory'], item)
                         })), {root : true})
                 else {
                     context.commit('downloads/populateReadersQueue',
@@ -232,7 +235,7 @@ const actions = {
                     () => {
                         if(payload.passThrough.hash === context.getters['selectedSeries'].hash) {
                             context.state.selectedSeries.isSaved = true;
-                            context.state.selectedSeries.img = payload.result; // local path to cover image
+                            context.state.selectedSeries.img = payload.result.downloaded; // local path to cover image
                             context.commit('addSeriesToLocalList', context.state.selectedSeries);
                             writeSelectedSeriesLocalData(context);
                         }
@@ -279,8 +282,16 @@ const actions = {
         if(context.getters['selectedSeries'].url === payload.passThrough.parentUrl)
             context.getters['selectedSeries'].chapters[payload.passThrough.chapterIndex].isDownloaded = true;
 
+        payload.result.localImages = payload.result.localImages.map(item => path.join(
+            getHashFromString(payload.passThrough.parentUrl),
+            getHashFromString(payload.passThrough.chapterUrl),
+            path.basename(item)
+        ))
+
         window.ipcRenderer.send('from-renderer', { fn: 'writeData',
-            payload: {path: payload.passThrough.outputPath, file: '/' + chapterDataFileName, data: payload.result} });
+            payload: {path: payload.passThrough.outputPath, file: '/' + chapterDataFileName,
+                data: payload.result
+        } });
     },
     checkForLocalChaptersOfSelectedSeries : (context, payload) => {
         if(!payload) {
