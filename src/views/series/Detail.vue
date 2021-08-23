@@ -185,6 +185,7 @@ export default {
     },
     methods: {
         read(index) {
+            this.$store.commit('downloads/clearReadersQueue');
             this.$store.dispatch('series/requestChapterDetail', index);
             this.$router.push({path: '/reader'})
         },

@@ -16,23 +16,6 @@
 
                 </v-row>
 
-                <v-row justify="center" align="stretch" class="mx-3">
-                    <v-col class="shrink">
-                        <v-btn :disabled="pageNumber <= 1 || isLoading" outlined
-                               @click.stop="changePage(pageNumber - 1)">
-                            <v-icon>mdi-chevron-left</v-icon> Previous</v-btn>
-                    </v-col>
-                    <v-col xl="4" cols="6" tag="form" @submit.prevent="search">
-                        <v-text-field placeholder="Search manga..." single-line v-model="search_term" @click:append="search"
-                                      append-icon="mdi-magnify" hide-details clearable :loading="isLoading" dense/>
-                        <button type="submit" class="d-none"></button>
-                    </v-col>
-                    <v-col class="shrink">
-                        <v-btn :disabled="isLoading" outlined @click.stop="changePage(pageNumber + 1)">
-                            Next <v-icon>mdi-chevron-right</v-icon></v-btn>
-                    </v-col>
-                </v-row>
-
                 <v-row v-if="series.length" justify="center" align="stretch">
                     <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
@@ -48,8 +31,13 @@
                                     <v-rating :value="4.5" color="amber"
                                               dense half-increments readonly size="14"
                                     ></v-rating>
-
                                     <div class="grey--text ml-4">4.5 (413)</div>
+
+                                    <v-spacer></v-spacer>
+
+                                    <v-chip v-if="isSeriesInLocal(comic.url)" color="success" outlined pill small>
+                                        In Library <v-icon right>mdi-check</v-icon>
+                                    </v-chip>
                                 </v-row>
 
                                 <div class="mt-4 subtitle-1">
@@ -102,6 +90,9 @@ export default {
         },
         changePage(pageNumber) {
             this.$store.dispatch('extensions/changePage', pageNumber);
+        },
+        isSeriesInLocal(url) {
+            return this.$store.getters['series/localSeries'].findIndex(item => item.url === url) >= 0;
         }
     },
     computed: {

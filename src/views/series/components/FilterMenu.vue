@@ -4,7 +4,9 @@
         :close-on-content-click="false"
         transition="slide-x-transition"
         left
-        nudge-left="80"
+        offset-x
+        close-delay="1000"
+        :open-on-hover="!menu"
     >
         <template v-slot:activator="{ on, attrs }">
             <v-fab-transition>
@@ -16,7 +18,7 @@
             </v-fab-transition>
         </template>
 
-        <v-card width="300">
+        <v-card width="400">
             <v-list class="py-0">
                 <v-list-item>
                     <v-list-item-content>
@@ -26,7 +28,31 @@
                 </v-list-item>
             </v-list>
 
-            <v-divider class="pb-3"></v-divider>
+            <v-divider></v-divider>
+
+            <v-list class="py-0">
+                <v-list-item>
+                    <v-list-item-content>
+                        <form  @submit.prevent="search">
+                            <v-text-field placeholder="Search manga..." single-line v-model="search_term" @click:append="search"
+                                          append-icon="mdi-magnify" hide-details clearable :loading="isLoading" dense/>
+                            <button type="submit" class="d-none"></button>
+                        </form>
+                    </v-list-item-content>
+
+                </v-list-item>
+                <v-list-item>
+                    <v-btn :disabled="pageNumber <= 1 || isLoading" outlined small
+                           @click.stop="changePage(pageNumber - 1)">
+                        <v-icon>mdi-chevron-left</v-icon> Prev</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn :disabled="isLoading" outlined @click.stop="changePage(pageNumber + 1)" small>
+                        Next <v-icon>mdi-chevron-right</v-icon></v-btn>
+                </v-list-item>
+
+            </v-list>
+
+            <v-divider class="pb-3 mt-3"></v-divider>
 
             <v-list class="py-0" v-if="seriesFilter">
                 <v-list-item v-for="(filter, index) in seriesFilter" :key="'filter' + index">
@@ -51,14 +77,14 @@
                 <v-spacer></v-spacer>
 
                 <v-btn
-                    text
+                    text :disabled="isLoading"
                     @click="resetFilter"
                 >
                     Reset
                 </v-btn>
                 <v-btn
                     color="primary"
-                    text
+                    text :disabled="isLoading"
                     @click.stop="applyFilter"
                 >
                     Search
@@ -92,20 +118,25 @@ export default {
                 this.seriesFilter[filterIndex].values.map((item, index) => ({text: item.name, value: index})) : null;
         },
         applyFilter() {
-            this.menu = false;
             this.$store.dispatch('extensions/browse');
         },
         resetFilter() {
-            this.menu = false;
             for(let i = 0; i < this.seriesFilter.length; i++)
                 this.$store.commit('extensions/setSelectedFilters', {filterIndex: i, selectedValue: 0});
 
             this.$store.dispatch('extensions/browse');
-        }
+        },
+        search() {
+            if(this.search_term) this.$store.dispatch('extensions/search', this.search_term);
+            else this.$store.dispatch('extensions/browse');
+        },
+        changePage(pageNumber) {
+            this.$store.dispatch('extensions/changePage', pageNumber);
+        },
     },
     computed: {
         ...mapGetters('series', ['isLoading', 'getError']),
-        ...mapGetters('extensions', ['seriesFilter']),
+        ...mapGetters('extensions', ['seriesFilter', 'pageNumber']),
     }
 }
 </script>
