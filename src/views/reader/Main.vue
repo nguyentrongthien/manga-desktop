@@ -3,6 +3,8 @@
         <LoadIndicator />
         <v-row justify="center">
             <v-card flat class="text-center" width="640" style="background: rgba(0,0,0,0)">
+                <div class="click-zone-left" v-ripple @click="read(previousChapter)"></div>
+                <div class="click-zone-right" v-ripple @click="read(nextChapter)"></div>
 
                 <transition-group name="fade" mode="out-in">
                     <v-progress-linear :key="'progress'" :value="loadingProgress" height="25" :color="loadingProgress < 100 ? 'green' : 'black'">
@@ -117,5 +119,21 @@ export default {
 <style scoped>
     .img-page { /* Weird fix for the gap between img elements */
         float: left;
+    }
+    .click-zone-left {
+        position: absolute;
+        /*background: rgba(186,108,108,0.54);*/
+        width: 50%;
+        height: 100%;
+        left: 0;
+        cursor: pointer;
+    }
+    .click-zone-right {
+        position: absolute;
+        /*background: rgba(116,186,108,0.54);*/
+        width: 50%;
+        height: 100%;
+        right: 0;
+        cursor: pointer;
     }
 </style>
