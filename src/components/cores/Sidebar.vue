@@ -4,14 +4,14 @@
         <v-list dense>
             <v-list-item to="/">
                 <v-list-item-action>
-                    <v-icon>mdi-library</v-icon>
+                    <v-icon>mdi-bookshelf</v-icon>
                 </v-list-item-action>
                 <v-list-item-title>Library</v-list-item-title>
             </v-list-item>
 
             <v-list-item to="/extensions">
                 <v-list-item-action>
-                    <v-icon>mdi-format-list-bulleted</v-icon>
+                    <v-icon>mdi-cloud-search-outline</v-icon>
                 </v-list-item-action>
                 <v-list-item-title>Browse</v-list-item-title>
             </v-list-item>

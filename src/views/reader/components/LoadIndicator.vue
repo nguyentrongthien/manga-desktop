@@ -1,7 +1,7 @@
 <template>
     <div class="load-indicator-container" :style="'width:' + loadIndicatorContainerWidth + 'px'">
         <div class="load-indicator-item" v-for="(page, index) in readersPages" :key="'indicator' + index"
-             :style="calcLoadIndicatorStyle(page.loaded, page.total)" @click.stop="scrollTo('#image' + index)">
+             :style="calcLoadIndicatorStyle(page)" @click.stop="scrollTo('#image' + index)">
             {{index + 1}}
         </div>
     </div>
@@ -17,8 +17,9 @@ export default {
         scrollTo(elementId) {
             this.$vuetify.goTo(elementId, {duration: 2000, easing: 'easeInOutCubic'});
         },
-        calcLoadIndicatorStyle(loaded, total) {
-            let perc = total ? Math.ceil((loaded/total) * 100) : 0;
+        calcLoadIndicatorStyle(page) {
+            if(page.error) return 'background: #4c0000;'
+            let perc = page.total ? Math.ceil((page.loaded/page.total) * 100) : 0;
             return 'background: linear-gradient(to left, #000, #000 0%, #6b6b6b ' + perc + '%, #000 0%);'
         }
     },

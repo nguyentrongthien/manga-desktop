@@ -13,28 +13,18 @@
                     <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
                         <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url)">
-                            <v-img height="370" :src="comic.img" class="white--text align-end"
-                                   gradient="to bottom, rgba(0,0,0,0), rgba(0,0,0,.7)">
+                            <v-img height="500" :src="comic.img" class="white--text align-end"
+                                   gradient="to bottom, rgba(0,0,0,0), rgba(0,0,0,.9)">
                                 <v-card-title class="py-2">{{ comic.title }}</v-card-title>
                             </v-img>
 
 
                             <v-card-text>
-                                <v-row align="center" class="mx-0">
-                                    <v-rating :value="4.5" color="amber"
-                                              dense half-increments readonly size="14"
-                                    ></v-rating>
 
-                                    <div class="grey--text ml-4">4.5 (413)</div>
-                                </v-row>
-
-                                <div class="mt-4 subtitle-1">
-                                    {{ comic.latestChapter }}
+                                <div class="mb-1 caption">
+                                    <b class="white--text">Reading:</b> [{{ comic.currentChapter }}]
                                 </div>
 
-                                <div class="mb-4 caption grey--text lighten-3">
-                                    Views: {{ comic.views }}
-                                </div>
                                 <div class="grey--text">
                                     {{ comic.url }}
                                 </div>
@@ -66,7 +56,11 @@ export default {
     computed: {
         ...mapGetters('series', ['isLoading', 'isScanning']),
         series() {
-            return this.$store.getters['series/localSeries'];
+            return this.$store.getters['series/localSeries'].map(series => ({
+                ...series,
+                currentChapter: series.chapters[series.reading].title,
+                latestChapter: series.chapters[0].title
+            }));
         },
     }
 }

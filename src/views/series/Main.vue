@@ -17,14 +17,16 @@
                 </v-row>
 
                 <v-row v-if="series.length" justify="center" align="stretch">
-                    <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
+                    <v-col xl="3" md="4" sm="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
                         <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url)">
                             <v-img height="370" :src="comic.img" class="white--text align-end"
-                                   gradient="to bottom, rgba(0,0,0,0), rgba(0,0,0,.7)">
+                                   :gradient="isSeriesInLocal(comic.url) ? 'to bottom, rgba(0,0,0,.6), rgba(0,0,0,1)' : 'to bottom, rgba(0,0,0,0), rgba(0,0,0,.7)'">
+                                <v-chip v-if="isSeriesInLocal(comic.url)" color="blue" small class="in-library-chip">
+                                    In Library
+                                </v-chip>
                                 <v-card-title class="py-2">{{ comic.title }}</v-card-title>
                             </v-img>
-
 
                             <v-card-text>
                                 <v-row align="center" class="mx-0">
@@ -35,9 +37,6 @@
 
                                     <v-spacer></v-spacer>
 
-                                    <v-chip v-if="isSeriesInLocal(comic.url)" color="success" outlined pill small>
-                                        In Library <v-icon right>mdi-check</v-icon>
-                                    </v-chip>
                                 </v-row>
 
                                 <div class="mt-4 subtitle-1">
@@ -106,5 +105,9 @@ export default {
 </script>
 
 <style scoped>
-
+    .in-library-chip {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
 </style>
