@@ -31,6 +31,7 @@ async function createWindow() {
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
+      devTools: !!process.env.WEBPACK_DEV_SERVER_URL,
       preload: path.join(__dirname, 'preload.js'),
     }
   })
@@ -45,6 +46,7 @@ async function createWindow() {
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
     if (!process.env.IS_TEST) win.webContents.openDevTools()
   } else {
+    win.removeMenu();
     createProtocol('app')
     // Load the index.html when not in development
     win.loadURL('app://./index.html')
