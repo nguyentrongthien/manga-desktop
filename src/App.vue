@@ -17,6 +17,8 @@
                 <h2 class="font-weight-light white--text mt-3">Loading...</h2>
             </v-overlay>
 
+            <PromptForDirectory />
+
         </v-app>
     </v-app>
 </template>
@@ -24,6 +26,7 @@
 <script>
 import Sidebar from "./components/cores/Sidebar";
 import Appbar from "./components/cores/Appbar";
+import PromptForDirectory from "./components/PromptForDirectory";
 import { mapGetters } from 'vuex';
 
 export default {
@@ -31,6 +34,7 @@ export default {
     components: {
         Sidebar,
         Appbar,
+        PromptForDirectory
     },
     created () {
         window.ipcRenderer.receive('from-main', (payload) => {

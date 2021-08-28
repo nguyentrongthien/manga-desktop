@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import modules from './modules';
+import {join} from 'path';
 
 const fileName = '.md_data';
 
@@ -46,6 +47,7 @@ const state = {
     placeholder_img: require('./../plugins/base64_img').default,
     data: {},
     appPath: null,
+    promptForDirectory: false,
 };
 const mutations = {
     setData : (state, payload) => {
@@ -65,6 +67,9 @@ const mutations = {
     },
     setReader : (state, reader = true) => {
         state.reader = reader;
+    },
+    setPromptForDirectory : (state, bool = true) => {
+        state.promptForDirectory = bool;
     }
 };
 const getters = {
@@ -76,6 +81,7 @@ const getters = {
     placeholderImg : state => state.placeholder_img,
     drawer : state => state.drawer,
     appPath : state => state.appPath,
+    promptForDirectory : state => state.promptForDirectory,
 };
 const actions = {
     initialize : () => {
@@ -112,6 +118,8 @@ const actions = {
     },
     selectDirectory : (context, payload) => {
         _selectDir(context, payload, 'directory', {flag: 'selectDirectory'}, () => {
+            if(!context.getters['getCache'])
+                context.commit('setDataProp', { key: 'cache', value: join(payload.result.filePaths[0], 'cache') });
             context.dispatch('series/init').then();
         });
     },

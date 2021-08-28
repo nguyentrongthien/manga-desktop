@@ -196,6 +196,7 @@ const actions = {
                 passThrough: {flag: 'series/receiveChapterDetail', chapterUrl: selectedChapter.url, hash: selectedChapter.hash}
             });
         } else { // Otherwise, we request it to cache directory
+            if(!context.rootGetters['getCache']) return;
             _requestChapterImagesUrlsForReaderCache(context, selectedChapter, index, 'series/receiveChapterDetail')
         }
     },
@@ -216,6 +217,7 @@ const actions = {
         );
     },
     saveSelectedSeriesToLocal : (context, payload) => {
+        if(!context.rootGetters['getDirectory']) return;
         context.commit('setSaving');
         if(!payload) { // First we download the cover image
             window.ipcRenderer.send('download-request', {
@@ -245,6 +247,7 @@ const actions = {
         }
     },
     saveChapterOfCurrentSeriesToLocal : (context, chapterUrl) => {
+        if(!context.rootGetters['getDirectory']) return;
         let index = context.getters['selectedSeries'].chapters
             .findIndex(chapter => chapter.hash === getHashFromString(chapterUrl))
         let chapter = context.getters['selectedSeries'].chapters[index];
@@ -254,6 +257,7 @@ const actions = {
         _requestChapterImagesUrlsToSaveToLocal(context, chapter, index);
     },
     saveAllChaptersOfCurrentSeriesToLocal : (context, forceReDownload = false) => {
+        if(!context.rootGetters['getDirectory']) return;
         if(!context.getters['selectedSeries'].isSaved) context.dispatch('saveSelectedSeriesToLocal').then();
         for (let [index, chapter] of context.getters['selectedSeries'].chapters.entries()) {
             if(!chapter.isDownloaded || forceReDownload)
