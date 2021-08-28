@@ -9,6 +9,13 @@
                     </v-col>
                 </v-row>
 
+
+                <v-row v-show="!series.length" justify="center" align="stretch">
+                    <v-col cols="12" class="text-center">
+                        <p>There's nothing here!</p>
+                    </v-col>
+                </v-row>
+
                 <v-row justify="center" align="stretch">
                     <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 

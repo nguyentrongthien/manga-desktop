@@ -1,5 +1,5 @@
 <template>
-    <v-container class="fill-height py-5" v-resize="onResize">
+    <v-container class="fill-height py-5">
         <v-row justify="center" class="fill-height">
             <v-col sm="11" cols="12">
                 <v-row justify="center" align="start">
@@ -38,7 +38,8 @@
 
                         <v-card class="mx-auto" outlined color="#000" :loading="isLoading">
 
-                            <v-card-text ref="descriptionBox">
+
+                            <v-card-text ref="descriptionBox" v-mutate="onResize">
 
                                 <h2 class="pb-4">
                                     {{ selectedSeries.title ? selectedSeries.title : 'No Title' }}
@@ -180,11 +181,20 @@ export default {
     created() {
         this.index = this.$route.params.index;
     },
+    mounted() {
+        this.$nextTick(() => {
+            this.onResize();
+        })
+    },
     beforeDestroy() {
         this.$store.commit('series/setError', null);
     },
     methods: {
         read(index) {
+            if(!this.$store.getters['getDirectory'] || !this.$store.getters['getCache']) {
+                this.$store.commit('setPromptForDirectory');
+                return;
+            }
             this.$store.commit('downloads/clearReadersQueue');
             this.$store.dispatch('series/requestChapterDetail', index);
             this.$router.push({path: '/reader'})
@@ -196,12 +206,15 @@ export default {
             this.read(0);
         },
         downloadAllChapters() {
+            this.checkDirectory();
             this.$store.dispatch('series/saveAllChaptersOfCurrentSeriesToLocal');
         },
         download(chapterUrl) {
+            this.checkDirectory();
             this.$store.dispatch('series/saveChapterOfCurrentSeriesToLocal', chapterUrl);
         },
         saveSeries() {
+            this.checkDirectory();
             this.$store.dispatch('series/saveSelectedSeriesToLocal');
         },
         updateSeries() {
@@ -214,6 +227,10 @@ export default {
         },
         clearErrors() {
             this.$store.commit('series/setError');
+        },
+        checkDirectory() {
+            if(!this.$store.getters['getDirectory'] || !this.$store.getters['getCache'])
+                this.$store.commit('setPromptForDirectory');
         }
     },
     computed: {

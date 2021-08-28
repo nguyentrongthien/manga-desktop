@@ -55,16 +55,16 @@
                         </v-btn>
                     </v-list-item-icon>
                     <v-list-item-icon>
-                        <v-btn icon>
+                        <v-btn icon @click.stop="changeReaderWidth(false)">
                             <v-icon>mdi-magnify-minus-outline</v-icon>
                         </v-btn>
                     </v-list-item-icon>
 
                     <v-list-item-icon>
-                        <v-text-field dense hide-details v-text="'100%'" class="mx-2"></v-text-field>
+                        <v-text-field dense hide-details v-text="readerWidthPercent + '%'" class="mx-2"></v-text-field>
                     </v-list-item-icon>
                     <v-list-item-icon>
-                        <v-btn icon class="mr-10">
+                        <v-btn icon class="mr-10" @click.stop="changeReaderWidth(true)">
                             <v-icon>mdi-magnify-plus-outline</v-icon>
                         </v-btn>
                     </v-list-item-icon>
@@ -91,6 +91,7 @@ import {mapGetters} from "vuex";
 
 export default {
     name: "NavigationMenu",
+    props: ['readerWidthPercent'],
     data: () => ({
         menu: false,
     }),
@@ -98,6 +99,9 @@ export default {
         read(index) {
             this.$emit('chapterChanged', index);
         },
+        changeReaderWidth(increase = true) {
+            this.$emit('readerWidthChanged', increase);
+        }
     },
     computed: {
         ...mapGetters('series', ['isLoading', 'getCurrentPages', 'getError']),

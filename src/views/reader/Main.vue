@@ -2,14 +2,17 @@
     <v-container class="fill-height py-5" fluid>
         <LoadIndicator />
         <v-row justify="center">
-            <v-card flat class="text-center" width="640" style="background: rgba(0,0,0,0)">
+            <v-card flat class="text-center" :width="readerWidth" style="background: rgba(0,0,0,0)">
                 <div class="click-zone-left" v-ripple @click="read(previousChapter)"></div>
                 <div class="click-zone-right" v-ripple @click="read(nextChapter)"></div>
 
+                <v-card-text>
+                    {{chapterTitle}}
+                </v-card-text>
                 <transition-group name="fade" mode="out-in">
                     <v-progress-linear :key="'progress'" :value="loadingProgress" height="25" :color="loadingProgress < 100 ? 'green' : 'black'">
                         <template v-slot:default="{ value }">
-                            {{ value === 100 ? chapterTitle : 'Loading... ' + value + '%'}}
+                            {{ value === 100 ? '' : 'Loading... ' + value + '%'}}
                         </template>
                     </v-progress-linear>
                     <div v-for="(page, index) in readersPages" :key="'image' + index">
@@ -23,7 +26,8 @@
             </v-card>
         </v-row>
 
-        <NavigationMenu @chapterChanged="read" />
+        <NavigationMenu @chapterChanged="read" @readerWidthChanged="changeReaderWidth"
+                        :reader-width-percent="readerWidthPercent" />
     </v-container>
 </template>
 
@@ -39,6 +43,8 @@ export default {
     data: () => ({
         drawer: null,
         sheet: false,
+        readerWidthPercent: 100,
+        readerWidthDefault: 640,
     }),
     mounted() {
         this.drawer = this.$store.getters['drawer'];
@@ -71,6 +77,15 @@ export default {
                 this.read(this.previousChapter);
             else if (event.code === 'ArrowRight' && !this.isLoading)
                 this.read(this.nextChapter);
+        },
+        changeReaderWidth(increase = true) {
+            if(increase && this.readerWidthPercent < 200)
+                this.readerWidthPercent += 10;
+            else if(this.readerWidthPercent > 50)
+                 this.readerWidthPercent -= 10;
+        },
+        decrementReaderWidth() {
+            if(this.readerWidthPercent > 50) this.readerWidthPercent -= 10;
         }
     },
     computed: {
@@ -111,6 +126,9 @@ export default {
         },
         chapterTitle() {
             return this.$store.getters['series/selectedSeries'].chapters[this.selectedChapter].title;
+        },
+        readerWidth() {
+            return Math.ceil(this.readerWidthDefault * (this.readerWidthPercent / 100));
         }
     },
 }

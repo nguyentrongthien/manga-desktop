@@ -74,6 +74,12 @@
             </v-list>
 
             <v-card-actions>
+                <v-btn small class="ml-2"
+                    outlined color="red"
+                    @click="menu = !menu"
+                >
+                    <v-icon small>mdi-close</v-icon> close
+                </v-btn>
                 <v-spacer></v-spacer>
 
                 <v-btn
