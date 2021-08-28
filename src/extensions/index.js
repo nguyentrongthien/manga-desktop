@@ -1,9 +1,13 @@
-// const fs = require('fs');
+const fs = require('fs');
 let extensions = new Map();
+let externalExtensionIds = [];
 import validator from "./validator";
+import path from 'path';
+import helper from "./helper";
+// import {app} from 'electron';
 
 (function updateModules() {
-    // Allow us to dynamically require all Vuex module files.
+    // Allow us to dynamically require all internal extension modules.
     // https://webpack.js.org/guides/dependency-management/#require-context
     const requireModule = require.context(
         // Search for files in the modules directory.
@@ -25,8 +29,40 @@ import validator from "./validator";
     });
 })();
 
+//Load external extensions (aka plugins)
+function _loadPlugins(pluginPath) {
+    console.log('Loading plugins from ' + pluginPath);
+    let directories = fs.readdirSync(pluginPath, { withFileTypes: true });
+
+    // Clear all loaded external plugins
+    externalExtensionIds.forEach(id => {
+        if(extensions.has(id)) extensions.delete(id);
+    })
+    externalExtensionIds.splice(0);
+
+    for (const dir of directories) {
+        if(dir.isDirectory()) {
+            let pluginPackageJsonPath = path.join(pluginPath, dir.name, 'package.json');
+            if(fs.existsSync(pluginPackageJsonPath)) {
+                let json = JSON.parse(fs.readFileSync(pluginPackageJsonPath))
+                // eslint-disable-next-line no-undef
+                let obj = __non_webpack_require__(path.join(pluginPath, dir.name, json.main));
+                let extension = obj(helper);
+                if(extension.info) {
+                    externalExtensionIds.push(extension.info.id);
+                    extensions.set(extension.info.id, extension);
+                }
+            }
+        }
+    }
+}
+
 export default {
-    initExtensions() {
+    initExtensions(pluginPath) {
+        if(pluginPath)
+            _loadPlugins(pluginPath);
+        else console.log('no plugin path');
+
         return this.listSources();
     },
     listSources: () => Array.from(extensions.values()).map(extension => extension.info),

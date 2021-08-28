@@ -20,7 +20,9 @@ const actions = {
     init : (context) => {
         context.commit('setScanning');
         window.ipcRenderer.send('from-renderer', {
-            fn: 'initExtensions', payload: null, passThrough: {flag: 'extensions/finishInit'}
+            fn: 'initExtensions',
+            payload: context.rootGetters['getExtension'],
+            passThrough: {flag: 'extensions/finishInit'}
         });
     },
     finishInit : (context, payload) => {

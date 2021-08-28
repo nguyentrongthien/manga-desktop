@@ -32,6 +32,10 @@ const defaults = [
         key: 'cache',
         value: null
     },
+    {
+        key: 'extension',
+        value: null
+    },
 ];
 
 const state = {
@@ -68,6 +72,7 @@ const getters = {
     isReading : state => state.reader,
     getDirectory : state => state.data.directory,
     getCache : state => state.data.cache,
+    getExtension : state => state.data.extension,
     placeholderImg : state => state.placeholder_img,
     drawer : state => state.drawer,
     appPath : state => state.appPath,
@@ -106,37 +111,30 @@ const actions = {
         }
     },
     selectDirectory : (context, payload) => {
-        if(!payload)
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'getDir',
-                passThrough: {flag: 'selectDirectory'}
-            });
-        else if (payload.result) {
-            if(!payload.result.canceled) {
-                context.commit('setDataProp', {
-                    key: 'directory',
-                    value: payload.result.filePaths[0]
-                });
-                context.dispatch('series/init').then();
-            }
-        }
+        _selectDir(context, payload, 'directory', {flag: 'selectDirectory'}, () => {
+            context.dispatch('series/init').then();
+        });
     },
     selectCache : (context, payload) => {
-        if(!payload)
-            window.ipcRenderer.send('from-renderer', {
-                fn: 'getDir',
-                passThrough: {flag: 'selectCache'}
-            });
-        else if (payload.result) {
-            if(!payload.result.canceled) {
-                context.commit('setDataProp', {
-                    key: 'cache',
-                    value: payload.result.filePaths[0]
-                });
-            }
-        }
+        _selectDir(context, payload, 'cache', {flag: 'selectCache'});
+    },
+    selectExtension : (context, payload) => {
+        _selectDir(context, payload, 'extension', {flag: 'selectExtension'}, () => {
+            context.dispatch('extensions/init').then();
+        });
     },
 };
+
+function _selectDir(context, payload, key, passThrough, successFn) {
+    if(!payload)
+        window.ipcRenderer.send('from-renderer', { fn: 'getDir', passThrough: passThrough });
+    else if (payload.result) {
+        if(!payload.result.canceled) {
+            context.commit('setDataProp', {key: key, value: payload.result.filePaths[0]});
+            if (successFn) successFn();
+        }
+    }
+}
 
 function writeToDisc(data) {
     window.ipcRenderer.send('from-renderer', {
