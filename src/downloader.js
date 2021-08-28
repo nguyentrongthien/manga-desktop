@@ -19,7 +19,8 @@ export default function (event, payload) {
     let url = payload.url;
     let fileName = payload.fileName;
     let targetLocation = payload.targetLocation;
-    let referer = payload.referer
+    let referer = payload.referer;
+    let timer = null;
 
     axios({
         method: 'GET',
@@ -32,7 +33,7 @@ export default function (event, payload) {
     }).then((response) => {
         let total = 0;
         let loaded = 0;
-        let timer = setInterval(() => { replyWithProgress(event, payload, loaded, total); }, 250);
+        timer = setInterval(() => { replyWithProgress(event, payload, loaded, total); }, 250);
         let filePath = prepareDirectory(url, fileName, targetLocation);
         response.data.pipe(fs.createWriteStream(filePath))
         response.data.on('data', (data) => {
@@ -48,7 +49,8 @@ export default function (event, payload) {
             event.reply('from-main', { error: error, passThrough: payload.passThrough });
         })
     }).catch((error) => {
-        console.log(error)
+        console.log(error);
+        clearInterval(timer);
         event.reply('from-main', { error: error, passThrough: payload.passThrough });
     })
 }
