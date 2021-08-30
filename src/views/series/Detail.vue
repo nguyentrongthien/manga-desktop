@@ -189,6 +189,9 @@ export default {
     beforeDestroy() {
         this.$store.commit('series/setError', null);
     },
+    destroyed() {
+        this.$store.commit('series/setSelectedSeries', {});
+    },
     methods: {
         read(index) {
             if(!this.$store.getters['getDirectory'] || !this.$store.getters['getCache']) {

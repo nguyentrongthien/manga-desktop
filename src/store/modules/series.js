@@ -9,10 +9,12 @@ const state = {
     series: [],
     localSeries: [], // Locally saved series
     webSeries: [], // Currently loaded series
+    newUpdates: [],
     pages: [], // Currently loaded pages of a single chapter
     scanning: false,
     loading: false,
     saving: false,
+    updating: 0,
     selected: { // A single selected series either from local or current
         data: null,
         from: 'current',
@@ -30,6 +32,7 @@ const getters = {
     isScanning : state => state.scanning,
     isLoading : state => state.loading,
     isSaving : state => state.saving,
+    isUpdating : state => state.updating,
     selectedSeries : state => state.selectedSeries,
     localSeries : state => state.localSeries,
     webSeries : state => state.webSeries,
@@ -46,12 +49,20 @@ const getters = {
     getCurrentPages : state => state.pages,
     getError : state => state.error,
     isDownloadQueueRunning : state => state.downloadQueueRunning,
+    seriesHasNewChapter : state => urlOrHash => {
+        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        let index = state.newUpdates.findIndex(item => item.hash === urlOrHash);
+        return index >= 0 ? state.newUpdates[index].newChapters : 0;
+    },
+    getNewUpdates : state => state.newUpdates
 }
 
 const mutations = {
-    setScanning : (state, isScanning = true) => {state.scanning = isScanning;},
-    setLoading : (state, isLoading = true) => {state.loading = isLoading;},
-    setSaving : (state, isSaving = true) => {state.saving = isSaving;},
+    setScanning : (state, isScanning = true) => {state.scanning = isScanning},
+    setLoading : (state, isLoading = true) => {state.loading = isLoading},
+    setSaving : (state, isSaving = true) => {state.saving = isSaving},
+    incrementUpdating : state => {state.updating += 1},
+    decrementUpdating : state => {state.updating -= 1},
     setWebSeries : (state, webSeries) => {
         state.webSeries.splice(0);
         webSeries.forEach(series => {
@@ -84,6 +95,10 @@ const mutations = {
         let index = state.processingSeries.findIndex(item => item === getHashFromString(url));
         if(index >= 0) state.processingSeries.splice(index, 1);
     },
+    removeSeriesFromNewUpdates : (state, url) => {
+        let index = state.newUpdates.findIndex(item => item.hash === getHashFromString(url));
+        if(index >= 0) state.newUpdates.splice(index, 1);
+    },
     setCachedImages : (state, images) => {
         let rnd = randomString(10);
         state.pages.splice(0);
@@ -96,7 +111,7 @@ const mutations = {
     popChapterFromDownloadQueue : (state, index) => {
         state.downloadQueue.splice(index, 1);
     },
-    setDownloadQueueRunning : (state, running = true) => { state.downloadQueueRunning = running; }
+    setDownloadQueueRunning : (state, running = true) => { state.downloadQueueRunning = running; },
 }
 
 const actions = {
@@ -154,30 +169,13 @@ const actions = {
         );
         context.commit('setLoading', false);
     },
+    updateAllLocalSeries : (context) => {
+        context.state.localSeries.forEach(series => {
+            _updateSeriesDetails(context, series.url, 'series/updateSeriesDetail');
+        })
+    },
     updateSeriesDetail : (context, payload) => {
-        context.commit('setError');
-        if(!payload.result && !payload.error) {
-            window.ipcRenderer.send('from-renderer', { // Request it from the remote host
-                fn: 'viewSeries', payload: payload, passThrough: {flag: 'series/updateSeriesDetail', url: payload}
-            });
-            context.commit('setSeriesInProcessingList', payload);
-        } else {
-            handleReply(context, payload,
-                () => {
-                    if(context.getters['selectedSeries'].hash === payload.result.hash) {
-                        payload.result.reading = context.getters['selectedSeries'].reading;
-                        payload.result.isSaved = true;
-                        context.commit('setSelectedSeries', payload.result);
-                        writeSelectedSeriesLocalData(context);
-                        context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
-
-                        context.commit('removeSeriesFromProcessingList', payload.result.url);
-                    }
-                }, () => {context.commit('setError', payload.error);}
-            );
-            context.commit('removeSeriesFromProcessingList', payload.passThrough.url);
-
-        }
+        _updateSeriesDetails(context, payload, 'series/updateSeriesDetail');
     },
     requestChapterDetail : (context, index) => { // Requesting chapter's details of the currently selected series
         context.commit('setError');
@@ -357,6 +355,60 @@ function _requestChapterImagesUrlsForReaderCache(context, chapter, index, flag) 
         postProcessor: 'series/completeSavingChapterImages'
     });
 
+}
+
+function _updateSeriesDetails(context, payload, flag) {
+    context.commit('setError');
+    if(!payload.result && !payload.error) { // expecting payload to be the url
+        window.ipcRenderer.send('from-renderer', { // Request it from the remote host
+            fn: 'viewSeries', payload: payload, passThrough: {flag: flag, url: payload}
+        });
+        context.commit('setSeriesInProcessingList', payload);
+        context.commit('incrementUpdating');
+    } else { // expecting payload.result to be the series data
+        handleReply(context, payload,
+            () => {
+                let index = context.state.localSeries.findIndex(item => item.hash === payload.result.hash);
+                let chapterCount = 0;
+                if(index >= 0) {
+                    payload.result.reading = context.state.localSeries[index].reading;
+                    payload.result.isSaved = true;
+                    _writeSeriesLocalData(context, payload.result.hash, payload.result);
+                    chapterCount = context.state.localSeries[index].chapters.length;
+                    context.state.localSeries.splice(index, 1, payload.result);
+                }
+                if(context.getters['selectedSeries'].hash === payload.result.hash) {
+                    context.commit('setSelectedSeries', payload.result);
+                    context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
+                } else {
+                    let i = context.state.newUpdates.findIndex(item => item.hash === payload.result.hash);
+                    let prevCount = i >= 0 ? context.state.newUpdates[i].newChapters : 0;
+                    context.state.newUpdates.splice(
+                        i >= 0 ? i : context.state.newUpdates.length,
+                        i >= 0 ? 1 : 0,
+                        {
+                            hash: payload.result.hash,
+                            newChapters: prevCount + payload.result.chapters.length - chapterCount
+                        }
+                    );
+                }
+            }, () => {context.commit('setError', payload.error);}
+        );
+        context.commit('removeSeriesFromProcessingList', payload.passThrough.url);
+        context.commit('decrementUpdating');
+    }
+}
+
+function _writeSeriesLocalData(context, seriesHash, data, passThrough) {
+    window.ipcRenderer.send('from-renderer', {
+        fn: 'writeData',
+        payload: {
+            path: context.rootGetters['getDirectory'] + '/' + seriesHash,
+            file: '/' + seriesDataFileName,
+            data: data,
+        },
+        passThrough: passThrough
+    });
 }
 
 function writeSelectedSeriesLocalData(context, passThrough) {
