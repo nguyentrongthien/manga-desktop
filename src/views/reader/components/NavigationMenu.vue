@@ -107,8 +107,9 @@ export default {
         ...mapGetters('series', ['isLoading', 'getCurrentPages', 'getError']),
         ...mapGetters('downloads', ['readersPages']),
         selectedSeries() {
-            let series = this.$store.getters['series/selectedSeries'];
-            return series ? series : {};
+            let index = this.$store.getters['series/localSeries']
+                .findIndex(series => series.hash === this.$route.params.seriesHash);
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
         },
         chapters() {
             return this.selectedSeries.chapters ?

@@ -1,5 +1,5 @@
-import {createHash} from "crypto";
 import { codes } from "../../errors";
+import helper from "../../extensions/helper";
 const path = require('path');
 
 const seriesDataFileName = '.md_series';
@@ -37,12 +37,12 @@ const getters = {
     localSeries : state => state.localSeries,
     webSeries : state => state.webSeries,
     isSeriesBeingProcessed : state => urlOrHash => {
-        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
         let index = state.processingSeries.findIndex(hash => hash === urlOrHash);
         return index >= 0;
     },
     isChapterBeingProcessed : state => urlOrHash => {
-        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
         let index = state.processingChapters.findIndex(hash => hash === urlOrHash);
         return index >= 0;
     },
@@ -50,7 +50,7 @@ const getters = {
     getError : state => state.error,
     isDownloadQueueRunning : state => state.downloadQueueRunning,
     seriesHasNewChapter : state => urlOrHash => {
-        if(urlOrHash.includes('/')) urlOrHash = getHashFromString(urlOrHash);
+        if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
         let index = state.newUpdates.findIndex(item => item.hash === urlOrHash);
         return index >= 0 ? state.newUpdates[index].newChapters : 0;
     },
@@ -78,29 +78,29 @@ const mutations = {
     setSelectedSeries : (state, seriesData) => {state.selectedSeries = seriesData;},
     setSelectedSeriesCurrentChapter : (state, index) => {state.selectedSeries.reading = index;},
     setChapterInProcessingList : (state, url) => {
-        let hash = getHashFromString(url);
+        let hash = helper.getHashFromString(url);
         if(state.processingChapters.findIndex(item => item === hash) < 0)
             state.processingChapters.push(hash);
     },
     removeChapterFromProcessingList : (state, url) => {
-        let index = state.processingChapters.findIndex(item => item === getHashFromString(url));
+        let index = state.processingChapters.findIndex(item => item === helper.getHashFromString(url));
         if(index >= 0) state.processingChapters.splice(index, 1);
     },
     setSeriesInProcessingList : (state, url) => {
-        let hash = getHashFromString(url);
+        let hash = helper.getHashFromString(url);
         if(state.processingSeries.findIndex(item => item === hash) < 0)
             state.processingSeries.push(hash);
     },
     removeSeriesFromProcessingList : (state, url) => {
-        let index = state.processingSeries.findIndex(item => item === getHashFromString(url));
+        let index = state.processingSeries.findIndex(item => item === helper.getHashFromString(url));
         if(index >= 0) state.processingSeries.splice(index, 1);
     },
     removeSeriesFromNewUpdates : (state, url) => {
-        let index = state.newUpdates.findIndex(item => item.hash === getHashFromString(url));
+        let index = state.newUpdates.findIndex(item => item.hash === helper.getHashFromString(url));
         if(index >= 0) state.newUpdates.splice(index, 1);
     },
     setCachedImages : (state, images) => {
-        let rnd = randomString(10);
+        let rnd = helper.randomString(10);
         state.pages.splice(0);
         state.pages = images.map(file => file + '?rnd=' + rnd);
     },
@@ -149,8 +149,8 @@ const actions = {
         // Attempt to load series data from local file
         window.ipcRenderer.send('from-renderer', {
             fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
-                getHashFromString(url) + '/' + seriesDataFileName,
-            passThrough: {flag: 'series/receiveSeriesDetail', url: url, hash: getHashFromString(url)}
+                helper.getHashFromString(url) + '/' + seriesDataFileName,
+            passThrough: {flag: 'series/receiveSeriesDetail', url: url, hash: helper.getHashFromString(url)}
         });
     },
     receiveSeriesDetail : (context, payload) => {
@@ -177,25 +177,27 @@ const actions = {
     updateSeriesDetail : (context, payload) => {
         _updateSeriesDetails(context, payload, 'series/updateSeriesDetail');
     },
-    requestChapterDetail : (context, index) => { // Requesting chapter's details of the currently selected series
+    requestChapterDetail : (context, payload) => { // payload = {index, hash}
         context.commit('setError');
-        context.commit('setSelectedSeriesCurrentChapter', index);
 
-        if(context.getters['selectedSeries'].isSaved) writeSelectedSeriesLocalData(context);
+        let series = _getSeriesByHash(context, payload.hash);
 
-        let selectedChapter = context.getters['selectedSeries'].chapters[index];
+        series.reading = payload.index;
 
-        if(context.getters['selectedSeries'].isSaved && selectedChapter.isDownloaded) {
+        if(series.isSaved) _writeSeriesLocalData(context, series.hash, series);
+
+        let selectedChapter = series.chapters[payload.index];
+
+        if(series.isSaved && selectedChapter.isDownloaded) {
             // the series is saved and chapter is downloaded, we attempt to load chapter from local
             window.ipcRenderer.send('from-renderer', {
                 fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
-                    getHashFromString(context.getters['selectedSeries'].url) + '/' +
-                    getHashFromString(selectedChapter.url) + '/' + chapterDataFileName,
+                    series.hash + '/' + helper.getHashFromString(selectedChapter.url) + '/' + chapterDataFileName,
                 passThrough: {flag: 'series/receiveChapterDetail', chapterUrl: selectedChapter.url, hash: selectedChapter.hash}
             });
         } else { // Otherwise, we request it to cache directory
             if(!context.rootGetters['getCache']) return;
-            _requestChapterImagesUrlsForReaderCache(context, selectedChapter, index, 'series/receiveChapterDetail')
+            _requestChapterImagesUrlsForReaderCache(context, selectedChapter, payload.index, 'series/receiveChapterDetail')
         }
     },
     receiveChapterDetail : (context, payload) => {
@@ -247,7 +249,7 @@ const actions = {
     saveChapterOfCurrentSeriesToLocal : (context, chapterUrl) => {
         if(!context.rootGetters['getDirectory']) return;
         let index = context.getters['selectedSeries'].chapters
-            .findIndex(chapter => chapter.hash === getHashFromString(chapterUrl))
+            .findIndex(chapter => chapter.hash === helper.getHashFromString(chapterUrl))
         let chapter = context.getters['selectedSeries'].chapters[index];
 
         if(!context.getters['selectedSeries'].isSaved) context.dispatch('saveSelectedSeriesToLocal').then();
@@ -281,12 +283,12 @@ const actions = {
     },
     completeSavingChapterImages : (context, payload) => {
         context.commit('removeChapterFromProcessingList', payload.passThrough.chapterUrl);
-        if(context.getters['selectedSeries'].url === payload.passThrough.parentUrl)
-            context.getters['selectedSeries'].chapters[payload.passThrough.chapterIndex].isDownloaded = true;
+        let series = _getSeriesByHash(context, helper.getHashFromString(payload.passThrough.parentUrl))
+        series.chapters[payload.passThrough.chapterIndex].isDownloaded = true;
 
         payload.result.localImages = payload.result.localImages.map(item => path.join(
-            getHashFromString(payload.passThrough.parentUrl),
-            getHashFromString(payload.passThrough.chapterUrl),
+            helper.getHashFromString(payload.passThrough.parentUrl),
+            helper.getHashFromString(payload.passThrough.chapterUrl),
             path.basename(item)
         ))
 
@@ -297,25 +299,26 @@ const actions = {
     },
     checkForLocalChaptersOfSelectedSeries : (context, payload) => {
         if(!payload) {
-            if(context.getters['selectedSeries'].isSaved) // If series if from local, check for series within its dir
-                for (let [index, chapter] of context.getters['selectedSeries'].chapters.entries()) {
+            let series = _getSelectedSeries(context);
+            if(series.isSaved) // If series if from local, check for series within its dir
+                for (let [index, chapter] of series.chapters.entries()) {
                     window.ipcRenderer.send('from-renderer', {
                         fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
-                            getHashFromString(context.getters['selectedSeries'].url) + '/' +
+                            helper.getHashFromString(series.url) + '/' +
                             chapter.hash + '/' + chapterDataFileName,
                         passThrough: {
-
-                            flag: 'series/checkForLocalChaptersOfSelectedSeries', url: chapter.url, index: index
+                            flag: 'series/checkForLocalChaptersOfSelectedSeries', seriesHash: series.hash, url: chapter.url, index: index
                         }
                     });
                     context.commit('setChapterInProcessingList', chapter.url);
                 }
         } else {
+            let series = _getSeriesByHash(context, payload.passThrough.seriesHash)
             handleReply(context, payload,
                 () => {
-                    context.getters['selectedSeries'].chapters[payload.passThrough.index].isDownloaded = true;
+                    series.chapters[payload.passThrough.index].isDownloaded = true;
                 }, () => {
-                    context.getters['selectedSeries'].chapters[payload.passThrough.index].isDownloaded = false;
+                    series.chapters[payload.passThrough.index].isDownloaded = false;
                 }
             );
             context.commit('removeChapterFromProcessingList', payload.passThrough.url);
@@ -339,7 +342,7 @@ function _requestChapterImagesUrlsToSaveToLocal(context, chapter, index) {
         chapterTitle: chapter.title,
         parentUrl: context.getters['selectedSeries'].url,
         outputPath: context.rootGetters['getDirectory'] + '/' +
-            getHashFromString(context.getters['selectedSeries'].url) + '/' + getHashFromString(chapter.url),
+            helper.getHashFromString(context.getters['selectedSeries'].url) + '/' + helper.getHashFromString(chapter.url),
         postProcessor: 'series/completeSavingChapterImages'
     });
 }
@@ -399,6 +402,16 @@ function _updateSeriesDetails(context, payload, flag) {
     }
 }
 
+function _getSeriesByHash(context, hash) {
+    let index = context.getters['localSeries']
+        .findIndex(series => series.hash === hash);
+    return index >= 0 ? context.getters['localSeries'][index] : context.getters['selectedSeries'];
+}
+
+function _getSelectedSeries(context) {
+    return _getSeriesByHash(context, context.getters['selectedSeries'].hash);
+}
+
 function _writeSeriesLocalData(context, seriesHash, data, passThrough) {
     window.ipcRenderer.send('from-renderer', {
         fn: 'writeData',
@@ -428,17 +441,6 @@ function handleReply(context, payload, succeed, fail) {
         succeed(context, payload);
     else if (payload.hasOwnProperty.call(payload, 'error'))
         fail(context, payload);
-}
-
-function getHashFromString(string) {
-    return createHash('sha256').update(string).digest('hex');
-}
-
-function randomString(length) {
-    let result = '';
-    let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
-    return result;
 }
 
 export default {

@@ -10,9 +10,10 @@
                     {{chapterTitle}}
                 </v-card-text>
                 <transition-group name="fade" mode="out-in">
-                    <v-progress-linear :key="'progress'" :value="loadingProgress" height="25" :color="loadingProgress < 100 ? 'green' : 'black'">
-                        <template v-slot:default="{ value }">
-                            {{ value === 100 ? '' : 'Loading... ' + value + '%'}}
+                    <v-progress-linear :key="'progress'" :value="loadingProgress" height="25" @click.stop="retry"
+                                       :color="failedPages.length ? 'red' : (loadingProgress < 100 ? 'green' : 'black')">
+                        <template v-slot:default="{  }">
+                            {{ progressBarText }}
                         </template>
                     </v-progress-linear>
                     <div v-for="(page, index) in readersPages" :key="'image' + index">
@@ -63,8 +64,12 @@ export default {
             if(index >= 0 && index < this.chapters.length && this.loadingProgress >= 100) {
                 this.scrollToTop();
                 this.$store.commit('downloads/clearReadersQueue');
-                this.$store.dispatch('series/requestChapterDetail', index);
+                this.$store.dispatch('series/requestChapterDetail', {index, hash: this.selectedSeries.hash});
             }
+        },
+        retry() {
+            if(this.failedPages.length)
+                this.$store.dispatch('downloads/runReadersQueue');
         },
         scrollToTop() {
             this.$vuetify.goTo(0, {
@@ -92,8 +97,9 @@ export default {
         ...mapGetters('series', ['isLoading', 'getCurrentPages', 'getError']),
         ...mapGetters('downloads', ['readersPages']),
         selectedSeries() {
-            let series = this.$store.getters['series/selectedSeries'];
-            return series ? series : {};
+            let index = this.$store.getters['series/localSeries']
+                .findIndex(series => series.hash === this.$route.params.seriesHash);
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
         },
         chapters() {
             return this.selectedSeries.chapters ?
@@ -124,8 +130,17 @@ export default {
             let loaded = this.readersPages.filter(item => item.localPath).length
             return total ? Math.ceil((loaded/total) * 100) : 0;
         },
+        failedPages() {
+            return this.readersPages.filter(page => page.error);
+        },
+        progressBarText() {
+            if(this.failedPages.length) {
+                return this.failedPages.length + ' page(s) failed. Click to retry (' + this.loadingProgress + '%)'
+            } else
+                return this.loadingProgress === 100 ? '' : 'Loading... ' + this.loadingProgress + '%';
+        },
         chapterTitle() {
-            return this.$store.getters['series/selectedSeries'].chapters[this.selectedChapter].title;
+            return this.selectedSeries.chapters[this.selectedChapter].title;
         },
         readerWidth() {
             return Math.ceil(this.readerWidthDefault * (this.readerWidthPercent / 100));

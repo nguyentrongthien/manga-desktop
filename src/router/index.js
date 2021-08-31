@@ -34,12 +34,12 @@ const routes = [
         component: () => import(/* webpackChunkName: "series-main" */ '../views/series/Main.vue')
     },
     {
-        path: '/series/detail',
+        path: '/series/detail/:seriesHash',
         name: 'Series Detail',
         component: () => import(/* webpackChunkName: "series-detail" */ '../views/series/Detail.vue')
     },
     {
-        path: '/reader',
+        path: '/reader/:seriesHash',
         name: 'Reader',
         component: () => import(/* webpackChunkName: "reader-main" */ '../views/reader/Main.vue')
     },

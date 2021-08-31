@@ -62,7 +62,7 @@
 
             <v-divider></v-divider>
             <v-list class="py-0" v-if="newUpdates.length" >
-                <v-list-item v-for="(item, index) in newUpdates" :key="'newUpdate' + index" @click="view(item.url)">
+                <v-list-item v-for="(item, index) in newUpdates" :key="'newUpdate' + index" @click="view(item.url, item.hash)">
                     <v-list-item-content>
                         <v-list-item-subtitle>
                             {{ item.title }} <br> {{ item.newChapters }} new chapters
@@ -99,10 +99,10 @@ export default {
         setDownloading(val = true) {
             this.downloading = val;
         },
-        view(seriesUrl) {
+        view(seriesUrl, hash) {
             this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
             this.$store.commit('series/removeSeriesFromNewUpdates', seriesUrl)
-            if(this.$route.path !== '/series/detail') this.$router.push({path: '/series/detail'})
+            if(this.$route.path !== '/series/detail') this.$router.push({path: '/series/detail/' + hash})
         },
     },
     computed: {

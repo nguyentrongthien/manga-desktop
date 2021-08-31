@@ -124,14 +124,16 @@ function requestReadersQueueDownload(context) {
     let rnd = randomString(20);
     context.commit('setCurrentReadersHash', rnd)
     context.state.readersQueue.forEach((item, index) => {
-        if(!item.localPath)
+        if(!item.localPath) {
+            context.state.readersQueue[index].error = false;
             window.ipcRenderer.send('download-request', {
                 url: context.state.readersQueue[index].url,
                 fileName: index.toString().padStart(5, '0'),
                 targetLocation: context.rootGetters['getCache'],
                 referer: context.state.readersQueue[index].url,
-                passThrough: { flag: 'downloads/runReadersQueue', index: index, rnd: rnd },
+                passThrough: {flag: 'downloads/runReadersQueue', index: index, rnd: rnd},
             });
+        }
     })
 }
 

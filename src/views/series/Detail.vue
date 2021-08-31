@@ -199,8 +199,8 @@ export default {
                 return;
             }
             this.$store.commit('downloads/clearReadersQueue');
-            this.$store.dispatch('series/requestChapterDetail', index);
-            this.$router.push({path: '/reader'})
+            this.$store.dispatch('series/requestChapterDetail', {index, hash: this.selectedSeries.hash});
+            this.$router.push({path: '/reader/' + this.selectedSeries.hash})
         },
         readFirstChapter() {
             this.read(this.selectedSeries.chapters.length - 1);
@@ -245,8 +245,9 @@ export default {
             return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : '';
         },
         selectedSeries() {
-            let series = this.$store.getters['series/selectedSeries'];
-            return series ? series : {};
+            let index = this.$store.getters['series/localSeries']
+                .findIndex(series => series.hash === this.$route.params.seriesHash);
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
         },
         chapterBoxHeight() {
             return this.window.y - this.descriptionBoxHeight - 140;

@@ -19,7 +19,7 @@
                 <v-row v-if="series.length" justify="center" align="stretch">
                     <v-col xl="3" md="4" sm="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
-                        <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url)">
+                        <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url, comic.hash)">
                             <v-img height="370" :src="comic.img" class="white--text align-end"
                                    :gradient="isSeriesInLocal(comic.url) ? 'to bottom, rgba(0,0,0,.6), rgba(0,0,0,1)' : 'to bottom, rgba(0,0,0,0), rgba(0,0,0,.7)'">
                                 <v-chip v-if="isSeriesInLocal(comic.url)" color="blue" small class="in-library-chip">
@@ -79,9 +79,9 @@ export default {
         this.$store.commit('series/setError', null);
     },
     methods: {
-        view(seriesUrl) {
+        view(seriesUrl, hash) {
             this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
-            this.$router.push({path: '/series/detail'})
+            this.$router.push({path: '/series/detail/' + hash})
         },
         search() {
             if(this.search_term) this.$store.dispatch('extensions/search', this.search_term);
