@@ -109,7 +109,7 @@ export default {
         selectedSeries() {
             let index = this.$store.getters['series/localSeries']
                 .findIndex(series => series.hash === this.$route.params.seriesHash);
-            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : this.$store.getters['series/selectedSeries'];
         },
         chapters() {
             return this.selectedSeries.chapters ?

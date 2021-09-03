@@ -48,6 +48,7 @@ const state = {
     data: {},
     appPath: null,
     promptForDirectory: false,
+    webViewUrl: null,
 };
 const mutations = {
     setData : (state, payload) => {
@@ -70,6 +71,9 @@ const mutations = {
     },
     setPromptForDirectory : (state, bool = true) => {
         state.promptForDirectory = bool;
+    },
+    setWebViewUrl : (state, url = null) => {
+        state.webViewUrl = url;
     }
 };
 const getters = {
@@ -78,6 +82,7 @@ const getters = {
     getDirectory : state => state.data.directory,
     getCache : state => state.data.cache,
     getExtension : state => state.data.extension,
+    getWebViewUrl : state => state.webViewUrl,
     placeholderImg : state => state.placeholder_img,
     drawer : state => state.drawer,
     appPath : state => state.appPath,

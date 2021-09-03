@@ -17,6 +17,8 @@
                 <h2 class="font-weight-light white--text mt-3">Loading...</h2>
             </v-overlay>
 
+            <WebView />
+
             <PromptForDirectory />
 
         </v-app>
@@ -27,6 +29,7 @@
 import Sidebar from "./components/cores/Sidebar";
 import Appbar from "./components/cores/Appbar";
 import PromptForDirectory from "./components/PromptForDirectory";
+import WebView from "./components/WebView";
 import { mapGetters } from 'vuex';
 
 export default {
@@ -34,7 +37,8 @@ export default {
     components: {
         Sidebar,
         Appbar,
-        PromptForDirectory
+        PromptForDirectory,
+        WebView
     },
     created () {
         window.ipcRenderer.receive('from-main', (payload) => {
@@ -49,6 +53,9 @@ export default {
     methods: {
         autoSave () {
             this.$store.dispatch('writeData');
+        },
+        autoUpdate() {
+
         },
         cancelAutoUpdate () {
             clearInterval(this.timer);

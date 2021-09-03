@@ -99,7 +99,7 @@ export default {
         selectedSeries() {
             let index = this.$store.getters['series/localSeries']
                 .findIndex(series => series.hash === this.$route.params.seriesHash);
-            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : this.$store.getters['series/selectedSeries'];
         },
         chapters() {
             return this.selectedSeries.chapters ?
@@ -140,7 +140,8 @@ export default {
                 return this.loadingProgress === 100 ? '' : 'Loading... ' + this.loadingProgress + '%';
         },
         chapterTitle() {
-            return this.selectedSeries.chapters[this.selectedChapter].title;
+            return this.selectedSeries && this.selectedSeries.chapters ?
+                this.selectedSeries.chapters[this.selectedChapter].title : '';
         },
         readerWidth() {
             return Math.ceil(this.readerWidthDefault * (this.readerWidthPercent / 100));

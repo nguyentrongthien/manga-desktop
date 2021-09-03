@@ -41,6 +41,19 @@ async function createWindow() {
     evt.preventDefault();
   });
 
+  // This is so that iframe can load external resources
+  win.webContents.session.webRequest.onHeadersReceived(
+    {urls: ['*://*/*']},
+    (details, callback) => {
+      Object.keys(details.responseHeaders).filter(x => x.toLowerCase() === 'x-frame-options')
+          .map(x => delete details.responseHeaders[x])
+
+      callback({
+        cancel: false,
+        responseHeaders: details.responseHeaders,
+      })
+    },);
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)

@@ -87,6 +87,12 @@
                                                         <v-icon small>mdi-page-last</v-icon>
                                                     </v-list-item-icon>
                                                 </v-list-item>
+                                                <v-list-item @click="viewOriginal">
+                                                    <v-list-item-title>View Original</v-list-item-title>
+                                                    <v-list-item-icon>
+                                                        <v-icon small>mdi-web</v-icon>
+                                                    </v-list-item-icon>
+                                                </v-list-item>
                                                 <!-- TODO: disable or display status while downloading-->
                                                 <v-list-item @click="downloadAllChapters">
                                                     <v-list-item-title>Download</v-list-item-title>
@@ -190,7 +196,7 @@ export default {
         this.$store.commit('series/setError', null);
     },
     destroyed() {
-        this.$store.commit('series/setSelectedSeries', {});
+        // this.$store.commit('series/setSelectedSeries', {});
     },
     methods: {
         read(index) {
@@ -207,6 +213,9 @@ export default {
         },
         readLastChapter() {
             this.read(0);
+        },
+        viewOriginal() {
+            this.$store.commit('setWebViewUrl', this.selectedSeries.url);
         },
         downloadAllChapters() {
             this.checkDirectory();
@@ -247,7 +256,7 @@ export default {
         selectedSeries() {
             let index = this.$store.getters['series/localSeries']
                 .findIndex(series => series.hash === this.$route.params.seriesHash);
-            return index >= 0 ? this.$store.getters['series/localSeries'][index] : {};
+            return index >= 0 ? this.$store.getters['series/localSeries'][index] : this.$store.getters['series/selectedSeries'];
         },
         chapterBoxHeight() {
             return this.window.y - this.descriptionBoxHeight - 140;
