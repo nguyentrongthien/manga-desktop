@@ -49,7 +49,6 @@ export default function (event, payload) {
             event.reply('from-main', { error: error, passThrough: payload.passThrough });
         })
     }).catch((error) => {
-        console.log(error);
         clearInterval(timer);
         event.reply('from-main', { error: error, passThrough: payload.passThrough });
     })

@@ -100,42 +100,51 @@ const actions = {
     },
     runReadersQueue : (context, payload) => {
         if(!payload) {
-            requestReadersQueueDownload(context);
+            let rnd = randomString(20);
+            context.commit('setCurrentReadersHash', rnd)
+            context.state.readersQueue.forEach((item, index) => {
+                requestReadersQueueItemDownload(context, index, {
+                    flag: 'downloads/runReadersQueue', index: index, rnd: rnd, tries: 1
+                });
+            })
+            // requestReadersQueueDownload(context);
         } else if(payload.passThrough.rnd === context.state.currentReadersHash) // Hash comparison is to make sure the result is of the same batch
             handleReply(context, payload,
                 () => {
                     if(payload.result.downloaded) {
                         context.state.readersQueue[payload.passThrough.index].localPath =
                             payload.result.downloaded + '?rnd=' + payload.passThrough.rnd;
-                        console.log(context.state.readersQueue[payload.passThrough.index].localPath);
                     } else if (payload.result.total) {
                         context.state.readersQueue[payload.passThrough.index].total = payload.result.total;
                         context.state.readersQueue[payload.passThrough.index].loaded = payload.result.loaded;
                     }
                 }, () => {
                     context.state.readersQueue[payload.passThrough.index].error = true;
-                    console.log(payload);
+                    if(payload.passThrough.tries <= 3) {
+                        requestReadersQueueItemDownload(context, payload.passThrough.index, {
+                            flag: 'downloads/runReadersQueue', index: payload.passThrough.index,
+                            rnd: payload.passThrough.rnd, tries: payload.passThrough.tries + 1
+                        });
+                    }
                 }
             );
     }
 };
 
-function requestReadersQueueDownload(context) {
-    let rnd = randomString(20);
-    context.commit('setCurrentReadersHash', rnd)
-    context.state.readersQueue.forEach((item, index) => {
-        if(!item.localPath) {
-            context.state.readersQueue[index].error = false;
-            window.ipcRenderer.send('download-request', {
-                url: context.state.readersQueue[index].url,
-                fileName: index.toString().padStart(5, '0'),
-                targetLocation: context.rootGetters['getCache'],
-                referer: context.state.readersQueue[index].url,
-                passThrough: {flag: 'downloads/runReadersQueue', index: index, rnd: rnd},
-            });
-        }
-    })
+function requestReadersQueueItemDownload(context, index, passThrough) {
+    if(!context.state.readersQueue[index].localPath) {
+        context.state.readersQueue[index].error = false;
+        window.ipcRenderer.send('download-request', {
+            url: context.state.readersQueue[index].url,
+            fileName: index.toString().padStart(5, '0'),
+            targetLocation: context.rootGetters['getCache'],
+            referer: context.state.readersQueue[index].url,
+            passThrough: passThrough,
+        });
+    }
 }
+
+
 
 function requestItemDownload(context, passThrough) {
     window.ipcRenderer.send('download-request', {
