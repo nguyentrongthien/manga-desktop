@@ -9,7 +9,6 @@ const state = {
     series: [],
     localSeries: [], // Locally saved series
     webSeries: [], // Currently loaded series
-    newUpdates: [],
     pages: [], // Currently loaded pages of a single chapter
     scanning: false,
     loading: false,
@@ -51,10 +50,9 @@ const getters = {
     isDownloadQueueRunning : state => state.downloadQueueRunning,
     seriesHasNewChapter : state => urlOrHash => {
         if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
-        let index = state.newUpdates.findIndex(item => item.hash === urlOrHash);
-        return index >= 0 ? state.newUpdates[index].newChapters : 0;
+        let index = state.localSeries.findIndex(item => item.hash === urlOrHash);
+        return index >= 0 ? (state.localSeries[index].newChapters ? state.localSeries[index].newChapters : 0) : 0;
     },
-    getNewUpdates : state => state.newUpdates
 }
 
 const mutations = {
@@ -94,10 +92,6 @@ const mutations = {
     removeSeriesFromProcessingList : (state, url) => {
         let index = state.processingSeries.findIndex(item => item === helper.getHashFromString(url));
         if(index >= 0) state.processingSeries.splice(index, 1);
-    },
-    removeSeriesFromNewUpdates : (state, url) => {
-        let index = state.newUpdates.findIndex(item => item.hash === helper.getHashFromString(url));
-        if(index >= 0) state.newUpdates.splice(index, 1);
     },
     setCachedImages : (state, images) => {
         let rnd = helper.randomString(10);
@@ -158,6 +152,7 @@ const actions = {
             () => {
                 context.commit('setSelectedSeries', payload.result);
                 context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
+                _setSeriesNewChaptersToZero(context, payload.result.hash);
             }, () => {
                 if(payload.error.includes(codes.FileNotFoundException)) { // This means series isn't available locally
                     console.log('requesting from source')
@@ -326,6 +321,13 @@ const actions = {
     },
 }
 
+function _setSeriesNewChaptersToZero(context, urlOrHash) {
+    if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
+    let index = context.state.localSeries.findIndex(series => series.hash === urlOrHash);
+    context.state.localSeries[index].newChapters = 0;
+    _writeSeriesLocalData(context, urlOrHash, context.state.localSeries[index]);
+}
+
 function _requestChapterImagesUrls(context, chapterUrl, passThrough) { // Request urls of pages of a chapter
     window.ipcRenderer.send('from-renderer', {
         fn: 'getChapterImageUrl', payload: {url: chapterUrl}, passThrough: passThrough
@@ -372,28 +374,21 @@ function _updateSeriesDetails(context, payload, flag) {
         handleReply(context, payload,
             () => {
                 let index = context.state.localSeries.findIndex(item => item.hash === payload.result.hash);
-                let chapterCount = 0;
                 if(index >= 0) {
+                    let localSeries = context.state.localSeries[index];
                     payload.result.reading = context.state.localSeries[index].reading;
                     payload.result.isSaved = true;
-                    _writeSeriesLocalData(context, payload.result.hash, payload.result);
-                    chapterCount = context.state.localSeries[index].chapters.length;
+
+                    if(context.getters['selectedSeries'].hash === payload.result.hash) {
+                        context.commit('setSelectedSeries', payload.result);
+                        context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
+                    } else {
+                        let prevNewChapters = localSeries.newChapters ? localSeries.newChapters : 0;
+                        payload.result.newChapters = prevNewChapters +
+                            payload.result.chapters.length - localSeries.chapters.length;
+                    }
                     context.state.localSeries.splice(index, 1, payload.result);
-                }
-                if(context.getters['selectedSeries'].hash === payload.result.hash) {
-                    context.commit('setSelectedSeries', payload.result);
-                    context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
-                } else {
-                    let i = context.state.newUpdates.findIndex(item => item.hash === payload.result.hash);
-                    let prevCount = i >= 0 ? context.state.newUpdates[i].newChapters : 0;
-                    context.state.newUpdates.splice(
-                        i >= 0 ? i : context.state.newUpdates.length,
-                        i >= 0 ? 1 : 0,
-                        {
-                            hash: payload.result.hash,
-                            newChapters: prevCount + payload.result.chapters.length - chapterCount
-                        }
-                    );
+                    _writeSeriesLocalData(context, payload.result.hash, payload.result);
                 }
             }, () => {context.commit('setError', payload.error);}
         );
@@ -425,15 +420,8 @@ function _writeSeriesLocalData(context, seriesHash, data, passThrough) {
 }
 
 function writeSelectedSeriesLocalData(context, passThrough) {
-    window.ipcRenderer.send('from-renderer', {
-        fn: 'writeData',
-        payload: {
-            path: context.rootGetters['getDirectory'] + '/' + context.getters['selectedSeries'].hash,
-            file: '/' + seriesDataFileName,
-            data: context.getters['selectedSeries'],
-        },
-        passThrough: passThrough
-    });
+    _writeSeriesLocalData(context, context.getters['selectedSeries'].hash,
+        context.getters['selectedSeries'], passThrough);
 }
 
 function handleReply(context, payload, succeed, fail) {

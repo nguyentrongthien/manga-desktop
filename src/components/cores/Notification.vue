@@ -64,10 +64,16 @@
             <v-list class="py-0" v-if="newUpdates.length" >
                 <v-list-item v-for="(item, index) in newUpdates" :key="'newUpdate' + index" @click="view(item.url, item.hash)">
                     <v-list-item-content>
-                        <v-list-item-subtitle>
-                            {{ item.title }} <br> {{ item.newChapters }} new chapters
+                        <v-list-item-title class="text--white caption">
+                            {{ item.title }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle class="caption">
+                            {{ item.newChapters }} new chapters
                         </v-list-item-subtitle>
                     </v-list-item-content>
+                    <v-list-item-icon>
+                        <v-icon color="red">mdi-new-box</v-icon>
+                    </v-list-item-icon>
                 </v-list-item>
             </v-list>
             <v-list class="py-0" v-else>
@@ -101,7 +107,6 @@ export default {
         },
         view(seriesUrl, hash) {
             this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
-            this.$store.commit('series/removeSeriesFromNewUpdates', seriesUrl)
             if(this.$route.path !== '/series/detail') this.$router.push({path: '/series/detail/' + hash})
         },
     },
@@ -126,15 +131,7 @@ export default {
             return this.getQueue.filter(item => !item.completed).length;
         },
         newUpdates() {
-            let newUpdateHashes = this.$store.getters['series/getNewUpdates'].filter(item => item.newChapters > 0);
-            return newUpdateHashes.map(item => {
-                let series = this.$store.getters['series/localSeries'].filter(series => item.hash === series.hash)[0];
-                return {
-                    title: series.title,
-                    url: series.url,
-                    ...item,
-                }
-            })
+            return this.$store.getters['series/localSeries'].filter(series => !!series.newChapters);
         },
         notificationCount() {
             return this.downloadQueue.length + this.newUpdates.length;

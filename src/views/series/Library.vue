@@ -20,7 +20,7 @@
                 </v-row>
 
                 <v-row justify="center" align="stretch">
-                    <v-col xl="3" md="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
+                    <v-col xl="3" md="4" sm="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
                         <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url, comic.hash)">
                             <v-img height="500" :src="comic.img" class="white--text align-end"
@@ -69,7 +69,6 @@ export default {
     methods: {
         view(seriesUrl, hash) {
             this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
-            this.$store.commit('series/removeSeriesFromNewUpdates', seriesUrl)
             this.$router.push({path: '/series/detail/' + hash})
         },
         updateSeries() {
