@@ -324,8 +324,10 @@ const actions = {
 function _setSeriesNewChaptersToZero(context, urlOrHash) {
     if(urlOrHash.includes('/')) urlOrHash = helper.getHashFromString(urlOrHash);
     let index = context.state.localSeries.findIndex(series => series.hash === urlOrHash);
-    context.state.localSeries[index].newChapters = 0;
-    _writeSeriesLocalData(context, urlOrHash, context.state.localSeries[index]);
+    if(index >= 0) {
+        context.state.localSeries[index].newChapters = 0;
+        _writeSeriesLocalData(context, urlOrHash, context.state.localSeries[index]);
+    }
 }
 
 function _requestChapterImagesUrls(context, chapterUrl, passThrough) { // Request urls of pages of a chapter
