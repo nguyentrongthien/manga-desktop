@@ -3,10 +3,13 @@ import cheerio from "cheerio";
 import {createHash} from "crypto";
 
 export default {
-    async loadUrl(url, referer) {
+    async loadUrl(url, referer, accept = null, userAgent = null) {
         let resp = await axios.get(url, {
             headers: {
-                "Referer": referer ? referer : url
+                "Referer": referer ? referer : url,
+                "accept" : accept ? accept : 'text/html',
+                'user-agent' : userAgent ? userAgent : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+                    '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36' // Impersonating Chrome
             }
         });
         return cheerio.load(resp.data);
