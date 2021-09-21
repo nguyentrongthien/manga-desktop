@@ -32,17 +32,21 @@ const actions = {
         }
     },
     browse : (context, id) => {
+        context.commit('series/setLoading', true, {root: true});
         if(id && context.state.currentId !== id) {
             context.commit('setCurrentId', id);
+            context.commit('setFilter', null);
+        }
+        if(!context.state.filter)
             window.ipcRenderer.send('from-renderer', {
                 fn: 'getAvailableFilters', payload: id, passThrough: {flag: 'extensions/receiveFilters'}
             });
-        }
         context.commit('setPageNumber', 1);
         context.commit('setSearchTerm', '');
         _requestSeries(context);
     },
     search : (context, search) => {
+        context.commit('series/setLoading', true, {root: true});
         context.commit('setSearchTerm', search);
         context.commit('setPageNumber', 1);
         _requestSeries(context, 'searchSeries');
