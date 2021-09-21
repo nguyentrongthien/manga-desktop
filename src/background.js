@@ -54,6 +54,23 @@ async function createWindow() {
       })
     },);
 
+  // This intercepts http requests to external sources and replace the referer with their own url
+  win.webContents.session.webRequest.onBeforeSendHeaders({urls: ['*://*/*']},
+      (details, callback) => {
+    if (details.url.startsWith(process.env.VUE_APP_API_SEFVER)) {
+      details.requestHeaders['Origin'] = 'my-tools';
+    } else {
+      const url = new URL(details.url);
+      details.requestHeaders['Origin'] = url.origin;
+      if (!details.url.includes('//localhost')
+          && details.requestHeaders['Referer']
+          && details.requestHeaders['Referer'].includes('//localhost')) {
+        details.requestHeaders['Referer'] = details.url;
+      }
+    }
+    callback({ cancel: false, requestHeaders: details.requestHeaders });
+  });
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
