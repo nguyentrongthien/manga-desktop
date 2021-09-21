@@ -73,6 +73,7 @@ const actions = {
                         let index = context.getters['getCurrentItem'].currentIndex;
                         context.getters['getCurrentItem'].downloadedFiles.splice(index, 0, payload.result.downloaded);
                         if(index < (context.getters['getCurrentItem'].urls.length - 1)) {
+                            // Start the next download in the queue
                             context.commit('updateCurrentItem', {key: 'currentIndex', value: index + 1});
                             requestItemDownload(context, {flag: 'downloads/runDownloadQueue'})
                         } else { // We finish the last url of the current queue item
@@ -94,7 +95,16 @@ const actions = {
                         context.commit('updateCurrentItem', {key: 'currentLoaded', value: payload.result.loaded});
                     }
                 }, () => {
-                    console.log(payload);
+                    // TODO: retry a failed downloads 10 times
+                    let tries = !context.getters['getCurrentItem'].tries ? 0 : context.getters['getCurrentItem'].tries;
+                    if(tries < 10) {
+                        console.log('Retry #' + (tries + 1) + ' of item #' + context.getters['getCurrentItem'].currentIndex);
+                        context.commit('updateCurrentItem', {key: 'tries', value: tries + 1});
+                        context.commit('updateCurrentItem', {key: 'currentTotal', value: 0});
+                        context.commit('updateCurrentItem', {key: 'currentLoaded', value: 0});
+                        requestItemDownload(context, {flag: 'downloads/runDownloadQueue'})
+                    } else
+                        console.error('Item #' + context.getters['getCurrentItem'].currentIndex + ' failed ' + (tries + 1) + ' times');
                 }
             );
     },
