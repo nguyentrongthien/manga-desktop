@@ -1,5 +1,6 @@
 import { codes } from "../../errors";
 import helper from "../../extensions/helper";
+import Vue from "vue";
 const path = require('path');
 
 const seriesDataFileName = '.md_series';
@@ -153,16 +154,21 @@ const actions = {
                 context.commit('setSelectedSeries', payload.result);
                 context.dispatch('checkForLocalChaptersOfSelectedSeries').then();
                 _setSeriesNewChaptersToZero(context, payload.result.hash);
+                context.commit('setLoading', false);
             }, () => {
                 if(payload.error.includes(codes.FileNotFoundException)) { // This means series isn't available locally
                     console.log('requesting from source')
+                    context.commit('setSelectedSeries', {});
+                    context.commit('setLoading');
                     window.ipcRenderer.send('from-renderer', { // Request it from the remote host
                         fn: 'viewSeries', payload: payload.passThrough.url, passThrough: {flag: 'series/receiveSeriesDetail'}
                     });
-                } else context.commit('setError', payload.error);
+                } else {
+                    context.commit('setError', payload.error);
+                    context.commit('setLoading', false);
+                }
             }
         );
-        context.commit('setLoading', false);
     },
     updateAllLocalSeries : (context) => {
         context.state.localSeries.forEach(series => {
@@ -319,6 +325,12 @@ const actions = {
             context.commit('removeChapterFromProcessingList', payload.passThrough.url);
         }
     },
+    addSeriesToCollection : (context, payload) => { // payload = {seriesHashes, collections}
+        context.state.localSeries.filter(series => payload.seriesHashes.includes(series.hash)).forEach(series => {
+            Vue.set(series, 'collectionNames', payload.collections);
+            _writeSeriesLocalData(context, series.hash, series);
+        });
+    }
 }
 
 function _setSeriesNewChaptersToZero(context, urlOrHash) {
@@ -378,7 +390,10 @@ function _updateSeriesDetails(context, payload, flag) {
                 let index = context.state.localSeries.findIndex(item => item.hash === payload.result.hash);
                 if(index >= 0) {
                     let localSeries = context.state.localSeries[index];
+
+                    //TODO: Persist additional information
                     payload.result.reading = context.state.localSeries[index].reading;
+                    payload.result.collectionNames = context.state.localSeries[index].collectionNames;
                     payload.result.isSaved = true;
 
                     if(context.getters['selectedSeries'].hash === payload.result.hash) {

@@ -16,7 +16,10 @@
 
                 </v-row>
 
-                <v-row v-if="series.length" justify="center" align="stretch">
+                <v-row v-if="isLoading" justify="center" align="stretch">
+                    Loading...
+                </v-row>
+                <v-row v-else-if="series.length" justify="center" align="stretch">
                     <v-col xl="3" md="4" sm="6" cols="12" class="my-6" v-for="(comic, index) in series" :key="index">
 
                         <v-card class="mx-auto fill-height" max-width="400" @click.stop="view(comic.url, comic.hash)">
@@ -73,7 +76,7 @@ export default {
     name: "Main",
     components: { FilterMenu },
     data: () => ({
-        search_term: '',
+
     }),
     beforeDestroy() {
         this.$store.commit('series/setError', null);
@@ -82,10 +85,6 @@ export default {
         view(seriesUrl, hash) {
             this.$store.dispatch('series/requestSeriesDetail', seriesUrl);
             this.$router.push({path: '/series/detail/' + hash})
-        },
-        search() {
-            if(this.search_term) this.$store.dispatch('extensions/search', this.search_term);
-            else this.$store.dispatch('extensions/browse');
         },
         changePage(pageNumber) {
             this.$store.dispatch('extensions/changePage', pageNumber);
