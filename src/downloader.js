@@ -8,11 +8,14 @@ function prepareDirectory(fileUrl, fileName, targetLocation) {
     return targetLocation + '/' + fileName + extension;
 }
 
-function replyWithProgress(event, payload, loaded, total) {
-    event.reply('from-main', {
-        result: { total: total, loaded: loaded },
-        passThrough: payload.passThrough
-    });
+function replyWithProgress(event, payload, obj) {
+    if(obj.loaded !== obj.current) {
+        event.reply('from-main', {
+            result: { total: obj.total, loaded: obj.loaded },
+            passThrough: payload.passThrough
+        });
+        obj.current = obj.loaded;
+    }
 }
 
 export default function (event, payload) {
@@ -31,18 +34,22 @@ export default function (event, payload) {
             "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
         }
     }).then((response) => {
-        let total = 0;
-        let loaded = 0;
-        timer = setInterval(() => { replyWithProgress(event, payload, loaded, total); }, 250);
+        //TODO: Find a way to pause/cancel an ongoing download
+        let obj = {
+            total: 0,
+            loaded: 0,
+            current: 0,
+        }
+        timer = setInterval(() => { replyWithProgress(event, payload, obj); }, 250);
         let filePath = prepareDirectory(url, fileName, targetLocation);
         response.data.pipe(fs.createWriteStream(filePath))
         response.data.on('data', (data) => {
-            total = response.headers['content-length'];
-            loaded += Buffer.byteLength(data);
+            obj.total = response.headers['content-length'];
+            obj.loaded += Buffer.byteLength(data);
         })
         response.data.on('end', () => {
             clearInterval(timer);
-            replyWithProgress(event, payload, loaded, total);
+            replyWithProgress(event, payload, obj);
             event.reply('from-main', { result: {downloaded: filePath}, passThrough: payload.passThrough });
         })
         response.data.on('error', (error) => {
