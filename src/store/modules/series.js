@@ -259,8 +259,9 @@ const actions = {
     },
     saveAllChaptersOfCurrentSeriesToLocal : (context, forceReDownload = false) => {
         if(!context.rootGetters['getDirectory']) return;
-        if(!context.getters['selectedSeries'].isSaved) context.dispatch('saveSelectedSeriesToLocal').then();
-        for (let [index, chapter] of context.getters['selectedSeries'].chapters.entries()) {
+        let series = _getSelectedSeries(context);
+        if(!series.isSaved) context.dispatch('saveSelectedSeriesToLocal').then();
+        for (let [index, chapter] of series.chapters.entries()) {
             if(!chapter.isDownloaded || forceReDownload)
                 _requestChapterImagesUrlsToSaveToLocal(context, chapter, index);
         }

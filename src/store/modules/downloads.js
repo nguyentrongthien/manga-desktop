@@ -129,13 +129,13 @@ const actions = {
                         context.state.readersQueue[payload.passThrough.index].loaded = payload.result.loaded;
                     }
                 }, () => {
-                    context.state.readersQueue[payload.passThrough.index].error = true;
                     if(payload.passThrough.tries <= 3) {
                         requestReadersQueueItemDownload(context, payload.passThrough.index, {
                             flag: 'downloads/runReadersQueue', index: payload.passThrough.index,
                             rnd: payload.passThrough.rnd, tries: payload.passThrough.tries + 1
                         });
-                    }
+                    } else
+                        context.state.readersQueue[payload.passThrough.index].error = true;
                 }
             );
     }
