@@ -18,17 +18,26 @@
                                     <div class="grey--text ml-4">4.5 (413)</div>
                                 </v-row>
 
-                                <div class="mt-3 caption">
+                                <div class="mt-3 caption" v-if="authors">
                                     Author(s): {{ authors }}
                                 </div>
-                                <div class="mt-3 caption">
+                                <div class="mt-3 caption" v-if="selectedSeries.status">
                                     Status: {{ selectedSeries.status ? selectedSeries.status : '' }}
                                 </div>
-                                <div class="mt-3 caption">
+                                <div class="mt-3 caption" v-if="selectedSeries.views">
                                     Views: {{ selectedSeries.views ? selectedSeries.views : '' }}
                                 </div>
-                                <div class="mt-3 caption">
+                                <div class="mt-3 caption" v-if="genres">
                                     Genres: {{ genres }}
+                                </div>
+                                <div class="mt-3 caption" v-if="parody">
+                                    Parody: {{ parody }}
+                                </div>
+                                <div class="mt-3 caption" v-if="contentTags">
+                                    Contents: {{ contentTags }}
+                                </div>
+                                <div class="mt-3 caption" v-if="characters">
+                                    Characters: {{ characters }}
                                 </div>
                             </v-card-text>
                         </v-card>
@@ -248,10 +257,19 @@ export default {
     computed: {
         ...mapGetters('series', ['isLoading', 'getError', 'isSaving', 'isDownloadQueueRunning']),
         authors() {
-            return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : '';
+            return this.selectedSeries.authors ? this.selectedSeries.authors.join(', ') : null;
         },
         genres() {
-            return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : '';
+            return this.selectedSeries.genres ? this.selectedSeries.genres.join(', ') : null;
+        },
+        parody() {
+            return this.selectedSeries.parody ? this.selectedSeries.parody.join(', ') : null;
+        },
+        contentTags() {
+            return this.selectedSeries.contents ? this.selectedSeries.contents.join(', ') : null;
+        },
+        characters() {
+            return this.selectedSeries.characters ? this.selectedSeries.characters.join(', ') : null;
         },
         selectedSeries() {
             let index = this.$store.getters['series/localSeries']

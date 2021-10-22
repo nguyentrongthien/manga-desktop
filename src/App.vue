@@ -1,27 +1,25 @@
 <template>
-    <v-app id="inspire">
-        <v-app id="inspire">
+    <v-app>
 
-            <Sidebar />
+        <Sidebar />
 
-            <Appbar />
+        <Appbar />
 
-            <v-main>
-                <v-fade-transition mode="out-in">
-                    <router-view :key="$route.path"></router-view>
-                </v-fade-transition>
-            </v-main>
+        <v-main>
+            <v-fade-transition mode="out-in">
+                <router-view :key="$route.path"></router-view>
+            </v-fade-transition>
+        </v-main>
 
-            <v-overlay :value="isBusy" :z-index="999999" class="text-center">
-                <v-progress-circular indeterminate size="64"></v-progress-circular>
-                <h2 class="font-weight-light white--text mt-3">Loading...</h2>
-            </v-overlay>
+        <v-overlay :value="isBusy" :z-index="999999" class="text-center">
+            <v-progress-circular indeterminate size="64"></v-progress-circular>
+            <h2 class="font-weight-light white--text mt-3">Loading...</h2>
+        </v-overlay>
 
-            <WebView />
+        <WebView />
 
-            <PromptForDirectory />
+        <PromptForDirectory />
 
-        </v-app>
     </v-app>
 </template>
 
