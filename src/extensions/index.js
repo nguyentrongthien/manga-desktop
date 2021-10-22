@@ -89,4 +89,14 @@ export default {
         }
         throw('Extension for ' + payload.url + ' could not be found');
     },
+    async getHtmlPage(url) {
+        if(typeof url === 'string') {
+            for(let key of Array.from(extensions.keys())) {
+                if(url.includes(key)) {
+                    return validator.validateHtmlPage(await extensions.get(key).getHtmlPage(url));
+                }
+            }
+            throw('Extension for ' + url + ' could not be found');
+        }
+    }
 }

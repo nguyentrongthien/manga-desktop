@@ -247,6 +247,68 @@ const actions = {
             context.commit('setSaving', false);
         }
     },
+    SaveSeriesToLocalByUrl : (context, payload) => {
+        if(!context.rootGetters['getDirectory']) return;
+        if(typeof payload === 'string') {
+            context.commit('setLoading');
+            context.commit('setSeriesInProcessingList', payload);
+            window.ipcRenderer.send('from-renderer', {
+                fn: 'readData', payload: context.rootGetters['getDirectory'] + '/' +
+                    helper.getHashFromString(payload) + '/' + seriesDataFileName,
+                passThrough: {flag: 'series/SaveSeriesToLocalByUrl', url: payload, hash: helper.getHashFromString(payload), stage: 1}
+            });
+        } else if (payload.passThrough.stage === 1) {
+            handleReply(context, payload,
+                () => {
+                    context.commit('setLoading', false);
+                    context.commit('removeSeriesFromProcessingList', payload.passThrough.url);
+                }, () => {
+                    if(payload.error.includes(codes.FileNotFoundException)) { // This means series isn't available locally
+                        context.commit('setLoading', false);
+                        context.commit('setSaving');
+                        window.ipcRenderer.send('from-renderer', { // Request it from the remote host
+                            fn: 'viewSeries', payload: payload.passThrough.url, passThrough: {flag: 'series/SaveSeriesToLocalByUrl', stage: 2}
+                        });
+                    } else {
+                        context.commit('setError', payload.error);
+                        context.commit('setLoading', false);
+                        context.commit('removeSeriesFromProcessingList', payload.passThrough.url);
+                    }
+                }
+            );
+        } else if (payload.passThrough.stage === 2) {
+            // TODO: Download cover image
+            let series = payload.result;
+            window.ipcRenderer.send('download-request', {
+                url: series.img,
+                fileName: 'cover',
+                targetLocation: context.rootGetters['getDirectory'] + '/' + series.hash,
+                referer: context.rootGetters['getDirectory'] + '/' + series.hash,
+                passThrough: {
+                    flag: 'series/SaveSeriesToLocalByUrl',
+                    series: series,
+                    stage: 3,
+                },
+            });
+        } else if (payload.passThrough.stage === 3 && payload.result.downloaded) {
+            handleReply(context, payload,
+                () => {
+                    if(context.state.selectedSeries === payload.passThrough.series.hash) {
+                        context.state.selectedSeries.isSaved = true;
+                        context.state.selectedSeries.img = payload.result.downloaded; // local path to cover image
+                    }
+
+                    payload.passThrough.series.isSaved = true;
+                    payload.passThrough.series.img = payload.result.downloaded; // local path to cover image
+
+                    context.commit('addSeriesToLocalList', payload.passThrough.series);
+                    _writeSeriesLocalData(context, payload.passThrough.series.hash, payload.passThrough.series)
+                }, () => {context.commit('setError', payload.error);}
+            );
+            context.commit('setSaving', false);
+            context.commit('removeSeriesFromProcessingList', payload.passThrough.series.url);
+        }
+    },
     saveChapterOfCurrentSeriesToLocal : (context, chapterUrl) => {
         if(!context.rootGetters['getDirectory']) return;
         let index = context.getters['selectedSeries'].chapters

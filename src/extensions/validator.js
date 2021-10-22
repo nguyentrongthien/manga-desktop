@@ -26,6 +26,13 @@ let seriesProperties = [
     'reading',
 ];
 
+let htmlPageProperties = [
+    'htmlDoc',
+    'isSeries',
+    'sourceId',
+    'originalUrl'
+]
+
 let chapterProperties = [
 
 ];
@@ -46,5 +53,6 @@ export default {
             validate(targetObjectArray[0], seriesOfListProperties)
 
         return targetObjectArray;
-    }
+    },
+    validateHtmlPage : (targetObject) => validate(targetObject, htmlPageProperties),
 }

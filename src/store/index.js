@@ -49,6 +49,7 @@ const state = {
     appPath: null,
     promptForDirectory: false,
     webViewUrl: null,
+    htmlObject: null,
 };
 const mutations = {
     setData : (state, payload) => {
@@ -74,6 +75,9 @@ const mutations = {
     },
     setWebViewUrl : (state, url = null) => {
         state.webViewUrl = url;
+    },
+    setHtmlObject : (state, args = null) => {
+        state.htmlObject = args;
     }
 };
 const getters = {
@@ -87,6 +91,7 @@ const getters = {
     drawer : state => state.drawer,
     appPath : state => state.appPath,
     promptForDirectory : state => state.promptForDirectory,
+    htmlObject : state => state.htmlObject,
 };
 const actions = {
     initialize : () => {
@@ -136,6 +141,15 @@ const actions = {
             context.dispatch('extensions/init').then();
         });
     },
+    requestHtmlPage : (context, url) => {
+        context.commit('setHtmlObject');
+        window.ipcRenderer.send('from-renderer', {
+            fn: 'getHtmlPage', payload: url, passThrough: {flag: 'receiveHtmlObject'}
+        });
+    },
+    receiveHtmlObject : (context, payload) => {
+        context.commit('setHtmlObject', payload.result);
+    }
 };
 
 function _selectDir(context, payload, key, passThrough, successFn) {

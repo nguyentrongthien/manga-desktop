@@ -6,7 +6,6 @@
         left
         offset-x
         close-delay="1000"
-        :open-on-hover="!menu"
     >
         <template v-slot:activator="{ on, attrs }">
             <v-fab-transition>
@@ -57,13 +56,18 @@
             <v-list class="py-0" v-if="seriesFilter">
                 <v-list-item v-for="(filter, index) in seriesFilter" :key="'filter' + index">
                     <v-list-item-content class="pt-0">
-                        <v-select :disabled="isLoading"
+
+                        <!-- TODO: Implement filters -->
+                        <v-select v-if="filter.type === 'dropdown'" :disabled="isLoading"
                                   :value="filter.selected"
                                   @input="setSelectedFilter($event, index)"
-                                  :items="getFilterOption(index)"
+                                  :items="getDropdownOptions(index)"
                                   hide-details hide-selected
                                   :label="filter.name"
                         ></v-select>
+
+                        <p v-else class="ma-0 grey--text">Invalid Filter</p>
+
                     </v-list-item-content>
                 </v-list-item>
             </v-list>
@@ -74,27 +78,15 @@
             </v-list>
 
             <v-card-actions>
-                <v-btn small class="ml-2"
-                    outlined color="red"
-                    @click="menu = !menu"
-                >
+                <v-btn small class="mr-2" outlined color="red" @click="menu = !menu">
                     <v-icon small>mdi-close</v-icon> close
                 </v-btn>
+                <v-btn small icon @click="viewMainPage"><v-icon>mdi-web</v-icon></v-btn>
+
                 <v-spacer></v-spacer>
 
-                <v-btn
-                    text :disabled="isLoading"
-                    @click="resetFilter"
-                >
-                    Reset
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    text :disabled="isLoading"
-                    @click.stop="applyFilter"
-                >
-                    Search
-                </v-btn>
+                <v-btn text :disabled="isLoading" @click="resetFilter">Reset</v-btn>
+                <v-btn color="primary" text :disabled="isLoading" @click.stop="search">Search</v-btn>
             </v-card-actions>
         </v-card>
     </v-menu>
@@ -109,8 +101,6 @@ export default {
     data: () => ({
         search_term: '',
         menu: false,
-        test_select: null,
-        test_options: [],
     }),
     methods: {
         setSelectedFilter(value, filterIndex) {
@@ -119,12 +109,9 @@ export default {
                 selectedValue: value,
             });
         },
-        getFilterOption(filterIndex) {
+        getDropdownOptions(filterIndex) {
             return this.seriesFilter ?
                 this.seriesFilter[filterIndex].values.map((item, index) => ({text: item.name, value: index})) : null;
-        },
-        applyFilter() {
-            this.$store.dispatch('extensions/browse');
         },
         resetFilter() {
             for(let i = 0; i < this.seriesFilter.length; i++)
@@ -139,6 +126,9 @@ export default {
         changePage(pageNumber) {
             this.$store.dispatch('extensions/changePage', pageNumber);
         },
+        viewMainPage() {
+            this.$store.commit('setWebViewUrl', this.$store.getters['extensions/currentExtension'].baseUrl);
+        }
     },
     computed: {
         ...mapGetters('series', ['isLoading', 'getError']),

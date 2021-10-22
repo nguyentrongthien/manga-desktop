@@ -12,6 +12,7 @@ const expObj = {
     getSeriesInfo : url => isUrlValid(url) ? getSeriesInfo(url) : null,
     getChapterImageUrl : payload => isUrlValid(payload.url) ? getChapterImageUrl(payload) : null,
     getAvailableFilters : () => getAvailableFilters(),
+    getHtmlPage : url => isUrlValid(url) ? getHtmlPage(url) : null,
 }
 
 function isUrlValid(url) {
@@ -53,6 +54,7 @@ async function getAvailableFilters() {
     let arr = [{
         name: 'Category',
         key: 'category',
+        default: 0,
         selected: 0,
         values: []
     }];
@@ -61,6 +63,8 @@ async function getAvailableFilters() {
             arr.push({
                 name: index === 0 ? 'Type' : 'State',
                 key: index === 0 ? 'type' : 'state',
+                default: 0,
+                type: 'dropdown',
                 selected: 0,
                 values: $(element).find('td > a').map((i, child) => ({
                     name: $(child).text(),
@@ -164,6 +168,12 @@ function _getChapters($) {
 
 async function getChapterImageUrl(payload) {
     return helper.getChapterImageUrls(payload, '.container-chapter-reader > img', expObj.info.baseUrl);
+}
+
+async function getHtmlPage(url) {
+    let $ = await helper.getCheerioObject(url);
+    return { htmlDoc: $.html(), sourceId: expObj.info.id, originalUrl: url,
+        isSeries: $.html().includes('manga-info-top') && $.html().includes('manga-info-chapter') };
 }
 
 export default expObj;
